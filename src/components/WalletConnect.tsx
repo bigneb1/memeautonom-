@@ -47,7 +47,7 @@ export function WalletConnect() {
               className="hidden sm:flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] px-2 py-1.5 border border-border text-cyan hover:border-cyan/60 transition-colors"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-green live-dot" />
-              {chain.name.replace("Mantle ", "M-")}
+              {(chain.name ?? "Chain").replace("Mantle ", "M-")}
             </button>
             <button
               onClick={openAccountModal}
