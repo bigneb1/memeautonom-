@@ -2,6 +2,7 @@ import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/r
 import { ParticleBG } from "../components/ParticleBG";
 import { Nav } from "../components/Nav";
 import { Ticker } from "../components/Ticker";
+import { Web3Providers } from "../components/Web3Providers";
 
 import appCss from "../styles.css?url";
 
@@ -61,25 +62,27 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   return (
-    <div className="relative min-h-screen bg-background">
-      <ParticleBG />
-      <div className="relative z-10">
-        <Nav />
-        <Ticker />
-        <main className="max-w-[1400px] mx-auto px-6 py-8">
-          <Outlet />
-        </main>
-        <footer className="max-w-[1400px] mx-auto px-6 py-10 border-t border-border mt-12">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-              MemeAutonom · Track 6 · Turing Test Hackathon 2026
+    <Web3Providers>
+      <div className="relative min-h-screen bg-background">
+        <ParticleBG />
+        <div className="relative z-10">
+          <Nav />
+          <Ticker />
+          <main className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
+            <Outlet />
+          </main>
+          <footer className="max-w-[1400px] mx-auto px-4 sm:px-6 py-8 sm:py-10 border-t border-border mt-12">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                MemeAutonom · Track 6 · Turing Test Hackathon 2026
+              </div>
+              <div className="font-serif-italic text-sm text-muted-foreground">
+                the wallet <span className="text-yellow not-italic font-mono">IS</span> the agent
+              </div>
             </div>
-            <div className="font-serif-italic text-sm text-muted-foreground">
-              the wallet <span className="text-yellow not-italic font-mono">IS</span> the agent
-            </div>
-          </div>
-        </footer>
+          </footer>
+        </div>
       </div>
-    </div>
+    </Web3Providers>
   );
 }

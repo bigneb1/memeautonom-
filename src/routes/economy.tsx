@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Tag } from "@/components/Tag";
+import { NodeGraph } from "@/components/NodeGraph";
 import { ECONOMY_STATS, FEED, WALLETS } from "@/lib/mock";
-import { useEffect, useRef } from "react";
 
 export const Route = createFileRoute("/economy")({
   component: Economy,
@@ -22,7 +22,7 @@ function Economy() {
             <Tag color="green" dot>LIVE</Tag>
             <Tag color="red">NO HUMAN IN LOOP</Tag>
           </div>
-          <h1 className="font-display text-4xl md:text-5xl text-foreground leading-[0.95]">
+          <h1 className="font-display text-3xl sm:text-4xl md:text-5xl text-foreground leading-[0.95]">
             271 wallets.
             <br />
             <span className="font-serif-italic text-yellow font-normal">Zero</span> humans.
@@ -42,7 +42,7 @@ function Economy() {
       <section className="grid lg:grid-cols-[1.5fr_1fr] gap-6">
         <div className="panel p-6">
           <Head label="WALLET_GRAPH" hint="USDC packets flowing between agentic wallets" />
-          <div className="mt-4 relative aspect-[16/10] bg-black/40 border border-border overflow-hidden">
+          <div className="mt-4 relative aspect-[16/11] sm:aspect-[16/10] bg-black/40 border border-border overflow-hidden">
             <NodeGraph />
           </div>
         </div>
@@ -119,128 +119,4 @@ function Head({ label, hint }: { label: string; hint?: string }) {
       {hint && <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">{hint}</div>}
     </div>
   );
-}
-
-function NodeGraph() {
-  const ref = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const dpr = window.devicePixelRatio || 1;
-
-    const resize = () => {
-      const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      ctx.scale(dpr, dpr);
-    };
-    resize();
-    window.addEventListener("resize", resize);
-
-    const W = () => canvas.getBoundingClientRect().width;
-    const H = () => canvas.getBoundingClientRect().height;
-
-    type Node = { x: number; y: number; r: number; label: string; color: string };
-    const colors = ["#e8ff47", "#47ffe8", "#47ff8a", "#c47fff", "#ff9147"];
-    const nodes: Node[] = Array.from({ length: 28 }, (_, i) => ({
-      x: Math.random() * W(),
-      y: Math.random() * H(),
-      r: 3 + Math.random() * 4,
-      label: `0x${(0x1000 + i * 0x91).toString(16).slice(0, 4)}`,
-      color: colors[i % colors.length],
-    }));
-
-    type Packet = { from: number; to: number; t: number; speed: number };
-    let packets: Packet[] = [];
-
-    const spawnPacket = () => {
-      const from = Math.floor(Math.random() * nodes.length);
-      let to = Math.floor(Math.random() * nodes.length);
-      if (to === from) to = (to + 1) % nodes.length;
-      packets.push({ from, to, t: 0, speed: 0.004 + Math.random() * 0.008 });
-    };
-
-    let last = performance.now();
-    let acc = 0;
-    let raf = 0;
-
-    const tick = (now: number) => {
-      const dt = now - last;
-      last = now;
-      acc += dt;
-      while (acc > 350) {
-        spawnPacket();
-        acc -= 350;
-      }
-
-      ctx.clearRect(0, 0, W(), H());
-
-      // light connection mesh
-      ctx.strokeStyle = "rgba(255,255,255,0.04)";
-      ctx.lineWidth = 0.5;
-      for (let i = 0; i < nodes.length; i++) {
-        for (let j = i + 1; j < nodes.length; j++) {
-          const dx = nodes[i].x - nodes[j].x;
-          const dy = nodes[i].y - nodes[j].y;
-          if (Math.hypot(dx, dy) < 130) {
-            ctx.beginPath();
-            ctx.moveTo(nodes[i].x, nodes[i].y);
-            ctx.lineTo(nodes[j].x, nodes[j].y);
-            ctx.stroke();
-          }
-        }
-      }
-
-      // packets
-      packets = packets.filter((p) => p.t < 1);
-      for (const p of packets) {
-        p.t += p.speed;
-        const a = nodes[p.from];
-        const b = nodes[p.to];
-        const x = a.x + (b.x - a.x) * p.t;
-        const y = a.y + (b.y - a.y) * p.t;
-
-        // trail
-        ctx.strokeStyle = `rgba(232,255,71,${0.35 * (1 - p.t)})`;
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(a.x, a.y);
-        ctx.lineTo(x, y);
-        ctx.stroke();
-
-        ctx.fillStyle = "#e8ff47";
-        ctx.beginPath();
-        ctx.arc(x, y, 2, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      // nodes
-      for (const n of nodes) {
-        ctx.fillStyle = n.color;
-        ctx.beginPath();
-        ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = "rgba(0,0,0,0.6)";
-        ctx.lineWidth = 1;
-        ctx.stroke();
-
-        ctx.fillStyle = "rgba(255,255,255,0.4)";
-        ctx.font = "9px DM Mono, monospace";
-        ctx.fillText(n.label, n.x + n.r + 3, n.y + 3);
-      }
-
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("resize", resize);
-    };
-  }, []);
-
-  return <canvas ref={ref} className="w-full h-full block" />;
 }
