@@ -67,3 +67,79 @@ export const SKILLS_MARKET = [
   { name: "depth-prober", desc: "Queries DEX order-book depth on demand. Earns from depth-query jobs.", fires: "EXECUTE", role: "EXECUTOR", installs: 76, cli: "byreal skill add depth-prober" },
   { name: "arb-hunter", desc: "Detects cross-DEX arbitrage. Posts execution jobs with 8m deadlines.", fires: "POST_JOB", role: "SCOUT", installs: 211, cli: "byreal skill add arb-hunter --min-spread 0.4" },
 ];
+
+export type SkillStatus = "active" | "paused";
+export type FeedColor = "yellow" | "cyan" | "green" | "orange" | "red" | "purple";
+
+export type WalletSkill = {
+  name: string;
+  status: SkillStatus;
+  fires: number;
+};
+
+export type Execution = {
+  t: string;
+  action: string;
+  detail: string;
+  tx: string;
+  color: FeedColor;
+};
+
+export type WalletDetail = {
+  addr: string;
+  role: "SCOUT" | "EXECUTOR" | "VERIFIER";
+  rep: number;
+  jobs: number;
+  vol: number;
+  autonomy: number;
+  since: string;
+  skills: WalletSkill[];
+  recent: Execution[];
+};
+
+const skillsByRole: Record<string, WalletSkill[]> = {
+  SCOUT: [
+    { name: "apy-scout", status: "active", fires: 47 },
+    { name: "arb-hunter", status: "active", fires: 31 },
+    { name: "price-oracle", status: "active", fires: 312 },
+  ],
+  EXECUTOR: [
+    { name: "lp-executor", status: "active", fires: 89 },
+    { name: "depth-prober", status: "active", fires: 124 },
+    { name: "rebalancer", status: "paused", fires: 6 },
+  ],
+  VERIFIER: [
+    { name: "price-oracle", status: "active", fires: 412 },
+    { name: "result-checker", status: "active", fires: 287 },
+    { name: "hash-verifier", status: "active", fires: 198 },
+  ],
+};
+
+const recentByRole: Record<string, Execution[]> = {
+  SCOUT: [
+    { t: "2m ago",  action: "POSTED_JOB", detail: "scan APY pools > 8% · bounty 3.00 USDC", tx: "0x88c1...2af3", color: "yellow" },
+    { t: "11m ago", action: "POSTED_JOB", detail: "find arb on Mantle DEX · bounty 2.50 USDC", tx: "0x91f0...0c2b", color: "yellow" },
+    { t: "24m ago", action: "REINVEST",   detail: "balance > reserve · skill apy-scout fires", tx: "0x4ad7...11e9", color: "purple" },
+    { t: "41m ago", action: "EARNED",     detail: "+1.20 USDC from job#4801", tx: "0x77bb...c0fa", color: "green" },
+  ],
+  EXECUTOR: [
+    { t: "14s ago", action: "ACCEPTED_JOB", detail: "job#4823 · LP arb on Mantle DEX", tx: "0x88c1...2af3", color: "cyan" },
+    { t: "3m ago",  action: "EXECUTED",     detail: "depth: 412k USDC @ 0.18% slippage", tx: "0xfa12...8801", color: "cyan" },
+    { t: "12m ago", action: "EARNED",       detail: "+1.20 USDC → balance 312.45", tx: "0x66e0...a14c", color: "green" },
+    { t: "27m ago", action: "DECISION",     detail: "skill price-oracle: drift below threshold, SKIP", tx: "—",            color: "orange" },
+  ],
+  VERIFIER: [
+    { t: "5s ago",  action: "VERIFIED", detail: "job#4821 · hashes match · payout released", tx: "0x33aa...7712", color: "green" },
+    { t: "1m ago",  action: "VERIFIED", detail: "job#4820 · result valid · 0.80 USDC", tx: "0x77c2...e119", color: "green" },
+    { t: "8m ago",  action: "REJECTED", detail: "job#4818 · hash mismatch · rep -1 to 0x21bc", tx: "0xfe11...09a1", color: "red" },
+    { t: "21m ago", action: "EARNED",   detail: "+0.30 USDC verification fee", tx: "0xab10...44c2", color: "green" },
+  ],
+};
+
+export function getWalletDetail(w: typeof WALLETS[number]): WalletDetail {
+  return {
+    ...w,
+    skills: skillsByRole[w.role] ?? [],
+    recent: recentByRole[w.role] ?? [],
+  };
+}
