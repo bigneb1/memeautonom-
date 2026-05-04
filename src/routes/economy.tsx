@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Tag } from "@/components/Tag";
+import { NodeGraph } from "@/components/NodeGraph";
 import { ECONOMY_STATS, FEED, WALLETS } from "@/lib/mock";
-import { useEffect, useRef } from "react";
 
 export const Route = createFileRoute("/economy")({
   component: Economy,
@@ -22,7 +22,7 @@ function Economy() {
             <Tag color="green" dot>LIVE</Tag>
             <Tag color="red">NO HUMAN IN LOOP</Tag>
           </div>
-          <h1 className="font-display text-4xl md:text-5xl text-foreground leading-[0.95]">
+          <h1 className="font-display text-3xl sm:text-4xl md:text-5xl text-foreground leading-[0.95]">
             271 wallets.
             <br />
             <span className="font-serif-italic text-yellow font-normal">Zero</span> humans.
@@ -42,7 +42,7 @@ function Economy() {
       <section className="grid lg:grid-cols-[1.5fr_1fr] gap-6">
         <div className="panel p-6">
           <Head label="WALLET_GRAPH" hint="USDC packets flowing between agentic wallets" />
-          <div className="mt-4 relative aspect-[16/10] bg-black/40 border border-border overflow-hidden">
+          <div className="mt-4 relative aspect-[16/11] sm:aspect-[16/10] bg-black/40 border border-border overflow-hidden">
             <NodeGraph />
           </div>
         </div>
