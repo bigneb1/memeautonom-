@@ -137,9 +137,11 @@ const recentByRole: Record<string, Execution[]> = {
 };
 
 export function getWalletDetail(w: typeof WALLETS[number]): WalletDetail {
+  const role = w.role as WalletDetail["role"];
   return {
     ...w,
-    skills: skillsByRole[w.role] ?? [],
-    recent: recentByRole[w.role] ?? [],
+    role,
+    skills: skillsByRole[role] ?? [],
+    recent: recentByRole[role] ?? [],
   };
 }
