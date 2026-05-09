@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { WalletConnect } from "./WalletConnect";
+import logoUrl from "@/assets/logo.png";
 
 const links = [
   { to: "/", label: "MY WALLET" },
@@ -16,9 +17,13 @@ export function Nav() {
     <header className="sticky top-0 z-30 bg-panel border-b border-border">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
         <Link to="/" className="flex items-center gap-2.5 shrink-0" onClick={() => setOpen(false)}>
-          <div className="w-7 h-7 bg-yellow flex items-center justify-center">
-            <span className="font-display text-black text-sm">M</span>
-          </div>
+          <img
+            src={logoUrl}
+            alt="MemeAutonom logo"
+            width={28}
+            height={28}
+            className="w-7 h-7 block"
+          />
           <div className="leading-none">
             <div className="font-display text-foreground text-sm sm:text-base tracking-tight">
               MEMEAUTONOM

@@ -1,16 +1,19 @@
-const items = [
-  "wallet 0x7Ae3 · POST_JOB · 3.00 USDC",
-  "wallet 0x9F22 · EXECUTED · job#4821",
-  "wallet 0xC112 · VERIFIED · payout released",
-  "271 wallets active",
-  "decision loop avg 1.4s",
-  "USDC settled 24h · 18,472.91",
-  "skill apy-scout fires 47x",
-  "rep 847 · jobs 142 · vol 2,847 USDC",
-  "no human in the loop",
-];
-
 export function Ticker() {
+  // Demo ticker items removed. Wire real-time stats from your indexer or
+  // on-chain subscription here (e.g. recent jobs, settlements, decisions).
+  const items: string[] = [];
+
+  if (items.length === 0) {
+    return (
+      <div className="border-y border-border bg-panel">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground flex items-center gap-2">
+          <span className="w-1 h-1 bg-yellow rounded-full" />
+          live ticker · awaiting indexer feed
+        </div>
+      </div>
+    );
+  }
+
   const doubled = [...items, ...items];
   return (
     <div className="border-y border-border bg-panel overflow-hidden">
