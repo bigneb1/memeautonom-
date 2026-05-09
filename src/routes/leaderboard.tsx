@@ -48,26 +48,32 @@ function Leaderboard() {
         </p>
       </section>
 
-      {/* Top wallet hero */}
-      <button
-        onClick={() => open(top)}
-        className="panel p-5 sm:p-8 flex flex-col md:flex-row md:items-end md:justify-between gap-5 w-full text-left hover:border-yellow/50 transition-colors"
-      >
-        <div className="min-w-0">
-          <Tag color="yellow">RANK 01 · CHAMPION</Tag>
-          <div className="font-display text-2xl sm:text-4xl text-foreground mt-3 break-all">
-            {top.addr}
+      {top ? (
+        <button
+          onClick={() => open(top)}
+          className="panel p-5 sm:p-8 flex flex-col md:flex-row md:items-end md:justify-between gap-5 w-full text-left hover:border-yellow/50 transition-colors"
+        >
+          <div className="min-w-0">
+            <Tag color="yellow">RANK 01 · CHAMPION</Tag>
+            <div className="font-display text-2xl sm:text-4xl text-foreground mt-3 break-all">
+              {top.addr}
+            </div>
+            <div className="font-mono text-xs text-muted-foreground mt-2">
+              role · {top.role} · active for {top.since}
+            </div>
           </div>
-          <div className="font-mono text-xs text-muted-foreground mt-2">
-            role · {top.role} · active for {top.since}
+          <div className="grid grid-cols-3 gap-3 md:gap-5">
+            <Mini label="REP" value={top.rep.toString()} color="text-yellow" />
+            <Mini label="JOBS" value={top.jobs.toString()} color="text-cyan" />
+            <Mini label="VOL USDC" value={top.vol.toLocaleString()} color="text-green" />
           </div>
-        </div>
-        <div className="grid grid-cols-3 gap-3 md:gap-5">
-          <Mini label="REP" value={top.rep.toString()} color="text-yellow" />
-          <Mini label="JOBS" value={top.jobs.toString()} color="text-cyan" />
-          <Mini label="VOL USDC" value={top.vol.toLocaleString()} color="text-green" />
-        </div>
-      </button>
+        </button>
+      ) : (
+        <EmptyPanel
+          title="NO WALLETS INDEXED YET"
+          body="Connect your indexer / subgraph to populate the ERC-8004 leaderboard. See INTEGRATION.md → Indexer."
+        />
+      )}
 
       {/* Mobile cards */}
       <section className="md:hidden space-y-2">
@@ -169,3 +175,15 @@ function Mini({ label, value, color }: { label: string; value: string; color: st
     </div>
   );
 }
+
+function EmptyPanel({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="panel p-6 sm:p-10 text-center">
+      <div className="font-display text-xl text-yellow">{title}</div>
+      <div className="font-mono text-xs text-muted-foreground mt-2 max-w-md mx-auto">
+        {body}
+      </div>
+    </div>
+  );
+}
+
