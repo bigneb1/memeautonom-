@@ -175,3 +175,15 @@ function Mini({ label, value, color }: { label: string; value: string; color: st
     </div>
   );
 }
+
+function EmptyPanel({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="panel p-6 sm:p-10 text-center">
+      <div className="font-display text-xl text-yellow">{title}</div>
+      <div className="font-mono text-xs text-muted-foreground mt-2 max-w-md mx-auto">
+        {body}
+      </div>
+    </div>
+  );
+}
+
