@@ -616,3 +616,80 @@ That's the full scope. Build §3 first (you're blocked on contract
 addresses for everything else), then §4 (indexer fills the dashboard),
 then §5 (runtime makes wallets actually autonomous). The frontend in
 this repo is ready to receive data the moment those land.
+
+---
+
+## 12. Skills system — how it actually works
+
+A **skill** is a pluggable capability an autonomous wallet installs. Skills are
+the unit of behavior in MemeAutonom: a wallet with no skills is inert; a wallet
+with skills proposes and executes actions on its own. There is no upper bound
+on how many skills exist — anyone can publish one to the `SkillRegistry`.
+
+### 12.1 The four parts of a skill
+
+1. **Manifest** — JSON pinned to IPFS, registered on-chain via
+   `SkillRegistry.publish(skillId, manifestCID, feePolicy)`.
+   Fields:
+   - `name`, `version`, `description`, `author`
+   - `permissions[]` — which actions the skill may propose
+     (`swap`, `transfer`, `stake`, `vote`, `read-only`, …)
+   - `triggers[]` — `tick`, `event:<topic>`, `cron:<expr>`, `webhook`
+   - `inputs[]` — required env / secrets (e.g. `RPC_URL`, `API_KEY:dexscreener`)
+   - `riskClass` — `safe` | `medium` | `high`
+   - `feePolicy` — flat / % of profit / subscription
+
+2. **Runtime handler** — code executed by the off-chain Byreal decision loop.
+   Runs in a sandboxed worker. Pure function:
+   `decide(state, ctx) → ProposedAction[]`.
+   Examples shipped in v1:
+   - `apy-scout` — polls Mantle DEX/lending APYs, proposes rebalances
+   - `executor` — signs and submits proposed swaps via the AgenticWallet
+   - `risk-guard` — vetoes proposals exceeding `riskClass` or slippage limits
+   - `verifier` — validates other wallets' job submissions for reward
+
+3. **On-chain binding** — when a user installs a skill, the AgenticWallet
+   stores `(skillId → permissionMask, spendingCap, expiry)`. The wallet's
+   `execute()` checks this mask before executing any proposal. This is the
+   only thing that lets a skill move funds.
+
+4. **Reputation hook** — every successful execution increments the wallet's
+   ERC-8004 reputation **and** the skill's global `fires` counter. Failed
+   executions slash both. This is what powers the leaderboard and the
+   "fire counts" shown in the Wallet Drawer.
+
+### 12.2 Lifecycle
+
+```
+publish skill ──► SkillRegistry (IPFS CID + feePolicy)
+       │
+user installs ──► AgenticWallet.installSkill(skillId, cap, expiry)
+       │
+Byreal loop tick ──► skill.decide() ──► ProposedAction
+       │
+risk-guard veto? ──┬─► drop + log
+                   └─► AgenticWallet.execute() ──► Mantle tx
+                                                     │
+                                              ERC8004Identity.bumpRep()
+                                              SkillRegistry.bumpFires()
+```
+
+### 12.3 Why "271" was a placeholder
+There is no fixed wallet count. The Economy page now reads
+`ECONOMY_STATS.activeWallets` from the indexer (`getEconomyStats` query in
+§5). Until your subgraph is deployed it shows `N wallets` / `—` instead of a
+fake number. The actual count is unbounded — every smart account spawned by
+`AgenticWalletFactory` increments it.
+
+### 12.4 If you "get everything" (full deploy)
+With contracts deployed (§3), indexer live (§5), and Byreal runtime running
+(§6), the loop is:
+1. User connects via RainbowKit → `AgenticWalletFactory.create()` mints them
+   a smart account + ERC-8004 identity.
+2. They browse `/skills`, install one or more skills (on-chain tx).
+3. Byreal worker picks up the new wallet, loads its installed skills,
+   begins ticking.
+4. Each successful tx updates reputation + skill fires; the indexer surfaces
+   it; the leaderboard, economy graph, and wallet drawer all light up
+   automatically — no further frontend changes needed.
+
