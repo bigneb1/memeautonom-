@@ -1,4 +1,4 @@
-import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { Outlet, Link, createRootRoute, HeadContent, Scripts, useRouter } from "@tanstack/react-router";
 import { ParticleBG } from "../components/ParticleBG";
 import { Nav } from "../components/Nav";
 import { Ticker } from "../components/Ticker";
@@ -48,7 +48,45 @@ export const Route = createRootRoute({
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
+  errorComponent: RootErrorComponent,
 });
+
+function RootErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+  const router = useRouter();
+  return (
+    <div className="relative flex min-h-screen items-center justify-center px-4 z-10 bg-background">
+      <div className="max-w-md w-full text-center panel p-8 sm:p-10">
+        <div className="font-display text-6xl text-yellow">!</div>
+        <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground mt-3">
+          autonomous loop interrupted
+        </div>
+        <h1 className="font-display text-2xl text-foreground mt-4">Something went wrong</h1>
+        <p className="font-mono text-xs text-muted-foreground mt-2">
+          The app failed to load. This is usually a transient network or RPC issue.
+        </p>
+        {import.meta.env.DEV && error?.message && (
+          <pre className="mt-4 max-h-40 overflow-auto border border-border bg-black/40 p-3 text-left font-mono text-[10px] text-red">
+            {error.message}
+          </pre>
+        )}
+        <div className="mt-6 flex items-center justify-center gap-3">
+          <button
+            onClick={() => { router.invalidate(); reset(); }}
+            className="font-mono text-[11px] uppercase tracking-[0.18em] px-4 py-2.5 bg-yellow text-black hover:bg-yellow/90 transition-colors"
+          >
+            Retry
+          </button>
+          <a
+            href="/"
+            className="font-mono text-[11px] uppercase tracking-[0.18em] px-4 py-2.5 border border-border text-foreground hover:border-yellow transition-colors"
+          >
+            Reload home
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function RootShell({ children }: { children: React.ReactNode }) {
   return (
