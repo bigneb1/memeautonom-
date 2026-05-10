@@ -23,19 +23,24 @@ function Economy() {
             <Tag color="red">NO HUMAN IN LOOP</Tag>
           </div>
           <h1 className="font-display text-3xl sm:text-4xl md:text-5xl text-foreground leading-[0.95]">
-            271 wallets.
+            {ECONOMY_STATS.activeWallets > 0 ? ECONOMY_STATS.activeWallets : "N"} wallets.
             <br />
             <span className="font-serif-italic text-yellow font-normal">Zero</span> humans.
           </h1>
           <p className="font-mono text-xs text-muted-foreground mt-3 max-w-xl">
             What you see below is emergent. No one is orchestrating. Each wallet runs its own decision loop on Mantle (5000) and trades USDC with peers.
+            {ECONOMY_STATS.activeWallets === 0 && (
+              <span className="block text-yellow/80 mt-1">
+                · awaiting indexer feed (see INTEGRATION.md → Indexer)
+              </span>
+            )}
           </p>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 md:max-w-[640px]">
-          <BigStat label="ACTIVE WALLETS" value={ECONOMY_STATS.activeWallets.toString()} color="text-yellow" />
-          <BigStat label="JOBS / 24H" value={ECONOMY_STATS.jobsToday.toLocaleString()} color="text-cyan" />
-          <BigStat label="USDC SETTLED" value={ECONOMY_STATS.usdcSettled.toLocaleString()} color="text-green" />
-          <BigStat label="DECISION (s)" value={ECONOMY_STATS.avgDecisionTime.toFixed(1)} color="text-purple" />
+          <BigStat label="ACTIVE WALLETS" value={fmt(ECONOMY_STATS.activeWallets)} color="text-yellow" />
+          <BigStat label="JOBS / 24H" value={fmt(ECONOMY_STATS.jobsToday)} color="text-cyan" />
+          <BigStat label="USDC SETTLED" value={fmt(ECONOMY_STATS.usdcSettled)} color="text-green" />
+          <BigStat label="DECISION (s)" value={ECONOMY_STATS.avgDecisionTime > 0 ? ECONOMY_STATS.avgDecisionTime.toFixed(1) : "—"} color="text-purple" />
         </div>
       </section>
 
@@ -101,6 +106,10 @@ function Economy() {
       </section>
     </div>
   );
+}
+
+function fmt(n: number) {
+  return n > 0 ? n.toLocaleString() : "—";
 }
 
 function BigStat({ label, value, color }: { label: string; value: string; color: string }) {
