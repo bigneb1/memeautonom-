@@ -11,7 +11,15 @@ import {
 
 // Publishable WalletConnect Cloud project id. Replace with your own at
 // https://cloud.walletconnect.com — safe to commit (publishable key).
-export const WALLETCONNECT_PROJECT_ID = "3fbb6bae6f1de962d911bb5b5c3dba68";
+export const WALLETCONNECT_PROJECT_ID =
+  (import.meta.env.VITE_WALLETCONNECT_PROJECT_ID as string | undefined) ||
+  "f0d6f8162be1beccf221b4e2f8bd7026";
+
+// Mantle Sepolia RPC. Override with VITE_MANTLE_SEPOLIA_RPC at build time
+// (e.g. an Ankr private endpoint). Falls back to the public RPC.
+const MANTLE_SEPOLIA_RPC =
+  (import.meta.env.VITE_MANTLE_SEPOLIA_RPC as string | undefined) ||
+  "https://rpc.sepolia.mantle.xyz";
 
 const connectors = connectorsForWallets(
   [
@@ -32,7 +40,7 @@ export const wagmiConfig = createConfig({
   ssr: true,
   transports: {
     [mantle.id]: http("https://rpc.mantle.xyz"),
-    [mantleSepoliaTestnet.id]: http("https://rpc.sepolia.mantle.xyz"),
+    [mantleSepoliaTestnet.id]: http(MANTLE_SEPOLIA_RPC),
   },
 });
 

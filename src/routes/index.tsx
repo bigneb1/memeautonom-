@@ -3,6 +3,7 @@ import { useAccount, useBalance, useChainId } from "wagmi";
 import { Tag } from "@/components/Tag";
 import { NodeGraph } from "@/components/NodeGraph";
 import { MY_WALLET, FEED, DECISION_LOG, type FeedColor } from "@/lib/mock";
+import { WalletSkillsPanel } from "@/components/WalletSkillsPanel";
 
 export const Route = createFileRoute("/")({
   component: MyWallet,
@@ -117,6 +118,14 @@ function MyWallet() {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Live skills + reputation from indexer */}
+      <section className="panel p-5 sm:p-6">
+        <SectionHead label="WALLET_SKILLS_LIVE" hint="indexer · ERC-8004 reputation" />
+        <div className="mt-4">
+          <WalletSkillsPanel mode="me" />
         </div>
       </section>
 

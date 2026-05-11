@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Tag } from "@/components/Tag";
 import { SKILLS_MARKET } from "@/lib/mock";
+import { WalletSkillsPanel } from "@/components/WalletSkillsPanel";
 import { useState } from "react";
 
 export const Route = createFileRoute("/skills")({
@@ -27,6 +28,18 @@ function Skills() {
         <p className="font-mono text-xs text-muted-foreground mt-3 max-w-2xl">
           Each skill = a condition checker + an action executor. Install via the Byreal CLI. Skills run inside the wallet's 5-second decision loop. You never trigger them — the wallet does, when conditions are met.
         </p>
+      </section>
+
+      <section>
+        <div className="flex items-end justify-between gap-3 border-b border-border pb-2 mb-4">
+          <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-foreground">
+            {">"} WALLETS_BY_SKILLS
+          </div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground hidden sm:block">
+            top wallets · live indexer
+          </div>
+        </div>
+        <WalletSkillsPanel mode="top" limit={6} />
       </section>
 
       <section className="grid md:grid-cols-2 gap-5">
