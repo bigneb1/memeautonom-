@@ -1,0 +1,70 @@
+# Entities consumed by the front-end. Field names mirror src/lib/api.ts
+# (LEADERBOARD_QUERY, WALLET_DETAIL_QUERY) and DiagnosticsPanel probes.
+
+type Wallet @entity {
+  id: ID!                         # lowercased wallet address
+  address: String!
+  role: String!                   # SCOUT | EXECUTOR | VERIFIER  (set by handler heuristic)
+  reputation: BigInt!
+  jobsCompleted: BigInt!
+  volumeUsdc: BigInt!
+  autonomyScore: Int!             # 0..100
+  activatedAt: BigInt!            # unix seconds
+  identityUri: String
+  skills: [SkillInstall!]! @derivedFrom(field: "wallet")
+  executions: [Execution!]! @derivedFrom(field: "wallet")
+  jobsPosted: [Job!]! @derivedFrom(field: "client")
+  jobsExecuted: [Job!]! @derivedFrom(field: "executor")
+}
+
+type Skill @entity {
+  id: ID!                         # bytes32 skill id (hex)
+  name: String!
+  uri: String!
+  author: Wallet!
+  publishedAt: BigInt!
+  installs: BigInt!
+  fires: BigInt!
+}
+
+type SkillInstall @entity {
+  id: ID!                         # `${skillId}-${wallet}`
+  wallet: Wallet!
+  skill: Skill!
+  name: String!                   # denormalised for fast leaderboard query
+  status: String!                 # active | paused
+  fires: BigInt!
+  installedAt: BigInt!
+}
+
+type Execution @entity {
+  id: ID!                         # `${tx}-${logIdx}`
+  wallet: Wallet!
+  timestamp: BigInt!
+  action: String!                 # SKILL_FIRE | JOB_ACCEPT | JOB_COMPLETE | IDENTITY | …
+  detail: String!
+  txHash: String!
+  color: String!                  # yellow|cyan|green|orange|red|purple
+}
+
+type Job @entity {
+  id: ID!                         # numeric job id
+  client: Wallet!
+  executor: Wallet
+  budget: BigInt!
+  paid: BigInt!
+  status: String!                 # OPEN|ACCEPTED|SUBMITTED|COMPLETED|CANCELLED
+  spec: String!
+  resultHash: String
+  postedAt: BigInt!
+  completedAt: BigInt
+}
+
+type EconomyStat @entity {
+  id: ID!                         # singleton "global"
+  activeWallets: Int!
+  jobsToday: Int!
+  usdcSettled: BigInt!
+  avgDecisionMs: Int!
+  updatedAt: BigInt!
+}

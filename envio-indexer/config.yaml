@@ -1,0 +1,47 @@
+# Envio HyperIndex config — MemeAutonom on Mantle Sepolia
+name: memeautonom
+description: Indexes ERC8004Identity, JobRegistry, SkillRegistry, AgenticWalletFactory on Mantle Sepolia
+schema: ./schema.graphql
+
+networks:
+  - id: 5003 # Mantle Sepolia
+    rpc_config:
+      url: ${MANTLE_SEPOLIA_RPC}
+    start_block: ${START_BLOCK}
+    contracts:
+      - name: ERC8004Identity
+        address:
+          - ${IDENTITY_ADDRESS}
+        handler: src/EventHandlers.ts
+        events:
+          - event: IdentityRegistered(address indexed wallet, uint256 indexed id, string uri)
+          - event: IdentityUpdated(address indexed wallet, string uri)
+
+      - name: SkillRegistry
+        address:
+          - ${SKILL_REGISTRY_ADDRESS}
+        handler: src/EventHandlers.ts
+        events:
+          - event: SkillPublished(bytes32 indexed id, address indexed author, string uri, string name)
+          - event: SkillInstalled(bytes32 indexed id, address indexed wallet)
+          - event: SkillUninstalled(bytes32 indexed id, address indexed wallet)
+          - event: SkillFired(bytes32 indexed id, address indexed wallet, bytes32 actionHash)
+          - event: SkillStatusChanged(bytes32 indexed id, address indexed wallet, uint8 status)
+
+      - name: JobRegistry
+        address:
+          - ${JOB_REGISTRY_ADDRESS}
+        handler: src/EventHandlers.ts
+        events:
+          - event: JobPosted(uint256 indexed id, address indexed client, uint256 budget, string spec)
+          - event: JobAccepted(uint256 indexed id, address indexed executor)
+          - event: JobSubmitted(uint256 indexed id, bytes32 resultHash)
+          - event: JobCompleted(uint256 indexed id, address indexed executor, uint256 paid, uint256 fee)
+          - event: JobCancelled(uint256 indexed id)
+
+      - name: AgenticWalletFactory
+        address:
+          - ${WALLET_FACTORY_ADDRESS}
+        handler: src/EventHandlers.ts
+        events:
+          - event: WalletCreated(address indexed wallet, address indexed owner, address indexed signer, uint256 salt)
