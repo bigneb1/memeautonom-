@@ -8,6 +8,7 @@ const links = [
   { to: "/economy", label: "ECONOMY" },
   { to: "/skills", label: "SKILLS" },
   { to: "/leaderboard", label: "LEADERBOARD" },
+  { to: "/admin", label: "ADMIN" },
 ] as const;
 
 export function Nav() {

@@ -4,6 +4,7 @@
 
 import { GraphQLClient, gql } from "graphql-request";
 import { useQuery } from "@tanstack/react-query";
+import { getConfig } from "./config";
 import type {
   WalletRow,
   WalletSkill,
@@ -11,8 +12,7 @@ import type {
   WalletDetail,
 } from "./mock";
 
-export const INDEXER_URL =
-  (import.meta.env.VITE_INDEXER_URL as string | undefined) || "";
+export const INDEXER_URL = getConfig().indexerUrl;
 
 export const indexerClient = INDEXER_URL
   ? new GraphQLClient(INDEXER_URL)

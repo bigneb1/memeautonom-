@@ -1,0 +1,13 @@
+{
+  "name": "memeautonom-indexer",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "envio dev",
+    "codegen": "envio codegen",
+    "deploy": "envio deploy"
+  },
+  "devDependencies": {
+    "envio": "^2.0.0"
+  }
+}
