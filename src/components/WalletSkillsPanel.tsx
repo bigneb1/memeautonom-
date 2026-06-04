@@ -1,7 +1,7 @@
 import { useAccount } from "wagmi";
 import { Tag } from "./Tag";
-import { useWalletDetail, useLeaderboard, INDEXER_URL } from "@/lib/api";
-import type { WalletDetail, WalletSkill } from "@/lib/mock";
+import { useWalletDetail, useLeaderboard, getIndexerUrl } from "@/lib/api";
+import type { WalletDetail, WalletSkill } from "@/lib/types";
 
 /**
  * WalletSkillsPanel
@@ -20,7 +20,7 @@ export function WalletSkillsPanel({
   mode?: "me" | "top";
   limit?: number;
 }) {
-  if (!INDEXER_URL) {
+  if (!getIndexerUrl()) {
     return (
       <Empty
         title="SKILLS_FEED · OFFLINE"
@@ -77,34 +77,24 @@ function TopView({ limit }: { limit: number }) {
   );
 }
 
-function WalletSkillsCard({
-  wallet,
-  highlight,
-}: {
-  wallet: WalletDetail;
-  highlight?: boolean;
-}) {
+function WalletSkillsCard({ wallet, highlight }: { wallet: WalletDetail; highlight?: boolean }) {
   const roleColor =
     wallet.role === "SCOUT" ? "yellow" : wallet.role === "EXECUTOR" ? "cyan" : "purple";
   const totalFires = wallet.skills.reduce((s, k) => s + k.fires, 0);
 
   return (
-    <div
-      className={`panel p-4 sm:p-5 ${highlight ? "border-yellow/50" : ""}`}
-    >
+    <div className={`panel p-4 sm:p-5 ${highlight ? "border-yellow/50" : ""}`}>
       <div className="flex items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2 min-w-0">
           <Tag color={roleColor as "cyan"}>{wallet.role}</Tag>
-          <Tag color="cyan">ERC-8004</Tag>
+          <Tag color="cyan">AGENT IDENTITY</Tag>
         </div>
         <div className="font-mono text-[10px] text-muted-foreground shrink-0">
           {wallet.skills.length} skills · {totalFires} fires
         </div>
       </div>
 
-      <div className="font-mono text-[11px] text-foreground break-all">
-        {wallet.addr}
-      </div>
+      <div className="font-mono text-[11px] text-foreground break-all">{wallet.addr}</div>
 
       <div className="grid grid-cols-3 gap-2 mt-3">
         <Mini label="REP" value={wallet.rep.toLocaleString()} color="text-yellow" />
@@ -136,19 +126,15 @@ function SkillRow({ skill }: { skill: WalletSkill }) {
   return (
     <li className="flex items-center justify-between gap-3 border border-border bg-black/30 px-3 py-2">
       <div className="min-w-0">
-        <div className="font-display text-sm text-foreground truncate">
-          {skill.name}
-        </div>
+        <div className="font-display text-sm text-foreground truncate">{skill.name}</div>
         <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
-          wallet-decided · autonomous
+          policy-bound · indexed
         </div>
       </div>
       <div className="text-right shrink-0">
         <span
           className={`tag ${
-            skill.status === "active"
-              ? "text-cyan border-cyan/60"
-              : "text-orange border-orange/60"
+            skill.status === "active" ? "text-cyan border-cyan/60" : "text-orange border-orange/60"
           }`}
         >
           {skill.status === "active" && (

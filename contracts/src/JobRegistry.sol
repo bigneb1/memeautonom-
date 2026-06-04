@@ -12,6 +12,18 @@ interface IERC8004 {
     );
 }
 
+interface IReputationRegistry {
+    function record(
+        address wallet,
+        int128 value,
+        uint8 decimals,
+        string calldata tag1,
+        string calldata tag2,
+        string calldata uri,
+        bytes32 fileHash
+    ) external returns (uint256);
+}
+
 /**
  * @title JobRegistry
  * @notice Wallet-to-wallet job marketplace settled in USDC. A "client"
@@ -48,6 +60,7 @@ contract JobRegistry {
     address public owner;
     uint16  public feeBps;     // e.g. 250 = 2.5%
     address public feeSink;
+    IReputationRegistry public reputationRegistry;
     uint256 public nextJobId = 1;
 
     mapping(uint256 => Job) public jobs;
@@ -57,15 +70,20 @@ contract JobRegistry {
     event JobSubmitted(uint256 indexed id, bytes32 resultHash);
     event JobCompleted(uint256 indexed id, address indexed executor, uint256 paid, uint256 fee);
     event JobCancelled(uint256 indexed id);
+    event ReputationRegistryUpdated(address indexed reputationRegistry);
 
     error NotOwner();
     error NotClient();
+    error NotClientOrExecutor();
     error BadStatus();
     error NotIdentified();
+    error ZeroAddress();
 
     modifier onlyOwner() { if (msg.sender != owner) revert NotOwner(); _; }
 
     constructor(address _usdc, address _identity, address _feeSink, uint16 _feeBps) {
+        if (_usdc == address(0) || _identity == address(0) || _feeSink == address(0)) revert ZeroAddress();
+        require(_feeBps <= 1000, "fee>10%");
         usdc = IERC20(_usdc);
         identity = IERC8004(_identity);
         owner = msg.sender;
@@ -74,8 +92,14 @@ contract JobRegistry {
     }
 
     function setFee(uint16 _feeBps, address _feeSink) external onlyOwner {
+        if (_feeSink == address(0)) revert ZeroAddress();
         require(_feeBps <= 1000, "fee>10%");
         feeBps = _feeBps; feeSink = _feeSink;
+    }
+
+    function setReputationRegistry(address registry) external onlyOwner {
+        reputationRegistry = IReputationRegistry(registry);
+        emit ReputationRegistryUpdated(registry);
     }
 
     function _requireIdentity(address w) internal view {
@@ -84,8 +108,9 @@ contract JobRegistry {
     }
 
     function post(uint128 budget, string calldata spec) external returns (uint256 id) {
+        require(budget > 0, "zero budget");
         _requireIdentity(msg.sender);
-        require(usdc.transferFrom(msg.sender, address(this), budget), "usdc xfer");
+        _safeTransferFrom(msg.sender, address(this), budget);
         id = nextJobId++;
         jobs[id] = Job({
             client: msg.sender, executor: address(0), budget: budget, paid: 0,
@@ -122,16 +147,31 @@ contract JobRegistry {
         j.paid = uint128(pay);
         j.completedAt = uint64(block.timestamp);
         j.status = Status.Completed;
-        if (fee > 0) require(usdc.transfer(feeSink, fee), "fee xfer");
-        require(usdc.transfer(j.executor, pay), "pay xfer");
+        if (fee > 0) _safeTransfer(feeSink, fee);
+        _safeTransfer(j.executor, pay);
+        if (address(reputationRegistry) != address(0)) {
+            reputationRegistry.record(j.executor, 10, 0, "job-complete", j.spec, j.spec, j.resultHash);
+        }
         emit JobCompleted(id, j.executor, pay, fee);
     }
 
     function cancel(uint256 id) external {
         Job storage j = jobs[id];
-        if (j.status != Status.Open || msg.sender != j.client) revert BadStatus();
+        if (j.status != Status.Open && j.status != Status.Accepted) revert BadStatus();
+        if (msg.sender != j.client && msg.sender != j.executor) revert NotClientOrExecutor();
         j.status = Status.Cancelled;
-        require(usdc.transfer(j.client, j.budget), "refund");
+        _safeTransfer(j.client, j.budget);
         emit JobCancelled(id);
+    }
+
+    function _safeTransfer(address to, uint256 amount) internal {
+        (bool ok, bytes memory ret) = address(usdc).call(abi.encodeWithSelector(IERC20.transfer.selector, to, amount));
+        require(ok && (ret.length == 0 || abi.decode(ret, (bool))), "usdc xfer");
+    }
+
+    function _safeTransferFrom(address from, address to, uint256 amount) internal {
+        (bool ok, bytes memory ret) =
+            address(usdc).call(abi.encodeWithSelector(IERC20.transferFrom.selector, from, to, amount));
+        require(ok && (ret.length == 0 || abi.decode(ret, (bool))), "usdc xferFrom");
     }
 }

@@ -1,695 +1,325 @@
-# MemeAutonom — Integration & Production Requirements
+# MemeAutonom Integration And Product Scope
 
-This document is the complete checklist to take the MemeAutonom frontend from
-"shell with empty states" to a fully-functional autonomous-wallet OS on
-**Mantle Network**. Everything the UI currently renders as empty / `—` is
-covered below: where the data must come from, which contracts to deploy,
-which APIs/SDKs/RPCs to wire, and the exact env vars to set.
+MemeAutonom is being narrowed into a Mantle-native product for **on-chain
+identity, reputation, and execution history for autonomous agent wallets**.
 
-> The frontend is already wired with **wagmi v2 + viem + RainbowKit** for
-> Mantle Mainnet (`5000`) and Mantle Sepolia (`5003`). All demo data has
-> been removed from `src/lib/mock.ts` — every export is an empty stub with
-> the correct TypeScript shape, ready to be replaced by live reads.
+The product should not claim full ERC-8004 compliance or unattended fund
+management. The current repo is wired as a production beta: Mantle mainnet
+contracts are deployed, the frontend reads live wallet and contract state, the
+generic wallet `execute` surface is removed, and Railway service configs exist
+for the indexer and runtime. The remaining operational milestone is one
+observed Railway loop:
 
----
+1. A user connects a wallet on the configured Mantle target.
+2. The user deploys or registers an agent wallet.
+3. The agent wallet receives an ERC-8004-style identity record.
+4. The user installs one bounded skill.
+5. An off-chain runtime executes one safe, policy-limited action.
+6. Contracts emit events.
+7. Envio indexes the events.
+8. The dashboard shows identity, skill fire count, execution history, and
+   reputation.
 
-## 0. Architecture overview
+That loop is the minimum viable product for the Turing Test Hackathon 2026
+**Agentic Wallets & Economy** track.
 
-```
-                ┌──────────────────────────────────┐
-                │        MemeAutonom Frontend       │
-                │   (TanStack Start + wagmi+viem)   │
-                └───────────────┬──────────────────┘
-                                │ reads
-        ┌───────────────────────┼────────────────────────┐
-        │                       │                        │
-   on-chain reads          GraphQL/REST              WalletConnect
-   (viem RPC)               Indexer                   (RainbowKit)
-        │                       │                        │
-┌───────▼────────┐    ┌─────────▼─────────┐     ┌────────▼────────┐
-│ Mantle RPC     │    │ The Graph subgraph │     │ Wallet (signer) │
-│  5000 / 5003   │    │  or custom indexer │     └─────────────────┘
-└───────┬────────┘    └─────────┬─────────┘
-        │                       │
-┌───────▼─────────────────────────────────────────────────┐
-│  Smart contracts on Mantle                              │
-│  · AgenticWalletFactory     (deploys wallets)           │
-│  · AgenticWallet (per user) (signs + executes)          │
-│  · ERC8004Identity          (NFT identity + reputation) │
-│  · JobRegistry              (post / accept / verify)    │
-│  · SkillRegistry            (skill metadata)            │
-│  · USDC (existing on Mantle)                            │
-└─────────────────────────────────────────────────────────┘
-        ▲
-        │ off-chain decision loop
-┌───────┴────────────────────────────┐
-│  Byreal Agent Runtime (Node/Rust)  │
-│  · polls on-chain state every 5s   │
-│  · runs installed Skill modules    │
-│  · signs txs with wallet's key     │
-└────────────────────────────────────┘
-```
+## Product Positioning
 
----
+Primary positioning:
 
-## 1. Environment variables
+> MemeAutonom gives autonomous wallets on Mantle an identity, skills,
+> transparent execution history, and reputation.
 
-Create the following. Publishable values can sit in `.env` (Vite reads
-`VITE_*`); secrets must live in Lovable Cloud secrets (server-only).
+Avoid broader claims until the system proves them on-chain:
 
-### 1.1 Frontend (already partially wired)
+- Do not call this a full wallet OS yet.
+- Do not claim full ERC-8004 compliance until the contract model is aligned
+  with the standard.
+- Do not claim agents can safely run forever.
+- Do not imply zero human control. The product should be policy-governed:
+  humans configure limits, agents act within those limits, and every action is
+  recorded.
 
-| Var | Where | Purpose | Where to get it |
-|---|---|---|---|
-| `VITE_WALLETCONNECT_PROJECT_ID` | `.env` | RainbowKit / WalletConnect v2 modal | https://cloud.reown.com (formerly WalletConnect Cloud). Currently hardcoded in `src/lib/wagmi.ts` — move to env. |
-| `VITE_MANTLE_RPC_MAINNET` | `.env` | viem transport for chain 5000 | Public: `https://rpc.mantle.xyz`. Production: Ankr / BlockPI / dRPC paid tier. |
-| `VITE_MANTLE_RPC_SEPOLIA` | `.env` | viem transport for chain 5003 | Public: `https://rpc.sepolia.mantle.xyz`. |
-| `VITE_INDEXER_URL` | `.env` | GraphQL endpoint for leaderboard / feed / economy stats | Your own Goldsky / The Graph / Envio deployment (see §4). |
-| `VITE_WALLET_FACTORY_ADDRESS` | `.env` | Address of `AgenticWalletFactory` on Mantle | After you deploy §3. |
-| `VITE_ERC8004_ADDRESS` | `.env` | Address of `ERC8004Identity` | After deploy §3. |
-| `VITE_JOB_REGISTRY_ADDRESS` | `.env` | Address of `JobRegistry` | After deploy §3. |
-| `VITE_SKILL_REGISTRY_ADDRESS` | `.env` | Address of `SkillRegistry` | After deploy §3. |
-| `VITE_USDC_ADDRESS` | `.env` | Mantle USDC | Mainnet: `0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9`. Sepolia: deploy a mock USDC. |
+## MVP User Journey
 
-### 1.2 Backend (Lovable Cloud secrets — `secrets--add_secret`)
+The production-facing flow should be:
 
-| Secret | Purpose | Where to get it |
-|---|---|---|
-| `MANTLE_RPC_PRIVATE` | Server-side RPC for indexer cron / server functions | Ankr / BlockPI dashboard |
-| `INDEXER_ADMIN_KEY` | Mutate-side of your indexer (if used) | Goldsky / Envio dashboard |
-| `BYREAL_API_KEY` | (Optional) hosted Byreal agent runtime | https://byreal.io once available; otherwise self-host (§5) |
-| `RELAYER_PRIVATE_KEY` | (Optional) gas relayer for first-time wallet activation | Generate via `cast wallet new`, fund with MNT |
-| `MANTLESCAN_API_KEY` | Verify deployed contracts & read tx receipts | https://mantlescan.xyz/myapikey |
+1. Connect wallet.
+2. Choose Mantle Sepolia or Mantle Mainnet.
+3. Activate an agent wallet.
+4. Register an identity record.
+5. Install a starter skill.
+6. Fund with a capped amount.
+7. Start the agent runtime.
+8. Watch one on-chain action appear in the dashboard.
+9. Review execution history, skill fires, reputation, and transaction links.
+10. Pause the agent or withdraw funds.
 
-> Never put a private key in `VITE_*` — those are bundled into the browser.
+Mainnet writes should stay behind explicit operator confirmation, low wallet
+policy limits, and `DRY_RUN=true` runtime rehearsal until the Railway loop is
+green.
 
----
+## Current Architecture
 
-## 2. Networks, RPCs & SDKs
-
-### 2.1 Networks (already configured)
-
-| Chain | ID | RPC | Explorer |
-|---|---|---|---|
-| Mantle Mainnet | 5000 | https://rpc.mantle.xyz | https://mantlescan.xyz |
-| Mantle Sepolia | 5003 | https://rpc.sepolia.mantle.xyz | https://sepolia.mantlescan.xyz |
-
-Already wired in `src/lib/wagmi.ts` via `wagmi/chains` (`mantle`, `mantleSepoliaTestnet`).
-
-### 2.2 RPC providers (pick one for production)
-
-- **Public** — `https://rpc.mantle.xyz` — fine for low traffic, gets rate-limited.
-- **Ankr** — https://www.ankr.com/rpc/mantle — generous free tier, paid for SLA.
-- **BlockPI** — https://blockpi.io — Mantle endpoints with archive support.
-- **dRPC** — https://drpc.org — load-balanced, websocket support.
-
-Plug the URL into `VITE_MANTLE_RPC_MAINNET` and update
-`src/lib/wagmi.ts → transports[mantle.id] = http(import.meta.env.VITE_MANTLE_RPC_MAINNET)`.
-
-### 2.3 SDKs already installed
-
-- `wagmi` (v2) — React hooks for chain, account, balance, contract reads/writes.
-- `viem` — low-level chain client (used under the hood).
-- `@rainbow-me/rainbowkit` — wallet connect modal.
-- `@tanstack/react-query` — data fetching cache.
-
-### 2.4 SDKs to add when you wire things
-
-```bash
-bun add graphql-request          # querying the indexer
-bun add @tanstack/react-query    # already there; for indexer queries
-bun add abitype                  # typed ABIs
-bun add @reown/appkit            # optional alt to RainbowKit
+```text
+User Wallet
+  |
+  | injected wallet connector + wagmi/viem
+  v
+MemeAutonom Frontend
+  |              |
+  | wagmi/viem   | GraphQL
+  v              v
+Mantle RPC     Envio Indexer
+  |              ^
+  | events       |
+  v              |
+Contracts on Mantle
+  | Identity registry
+  | Reputation registry
+  | Validation registry
+  | Agentic wallet factory
+  | Skill registry
+  | Job registry
+  v
+Railway Agent Runtime
+  | reads installed skills
+  | simulates bounded actions
+  | sends transactions through AgenticWallet
+  | exposes health and decision logs
 ```
 
----
+## Repository Map
 
-## 3. Smart contracts
+| Area            | Path                | Status                                                                  |
+| --------------- | ------------------- | ----------------------------------------------------------------------- |
+| Frontend        | `src/`              | Builds, runs, and reads live Mantle wallet/contract state.              |
+| Runtime config  | `src/lib/config.ts` | Uses build env vars first, with browser-local operator overrides.       |
+| GraphQL adapter | `src/lib/api.ts`    | Supports wallet detail, leaderboard, feed, economy, and skills queries. |
+| Contracts       | `contracts/src/`    | Mainnet deployed MVP with Foundry lifecycle tests.                      |
+| Indexer         | `envio-indexer/`    | Envio config and codegen pass; deploy as a Railway service.             |
+| Runbook         | `RUNBOOK.md`        | Local setup, contract, indexer, runtime, and Railway commands.          |
 
-You need 4 contracts. Skeletons below — open them in Foundry / Hardhat /
-Remix, audit them, and deploy in this order.
+## Environment Variables
 
-### 3.1 `ERC8004Identity.sol`
+Frontend variables are public because Vite bundles `VITE_*` into the browser.
+Never put private keys, seed phrases, API secrets, or relayer keys in `VITE_*`.
 
-Soulbound (non-transferable) NFT representing a wallet's autonomous-agent
-identity, plus on-chain reputation counter.
-
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
-
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-
-contract ERC8004Identity is ERC721, Ownable {
-    uint256 public nextId = 1;
-    mapping(address => uint256) public idOf;          // wallet -> tokenId
-    mapping(uint256 => uint256) public reputation;    // tokenId -> rep score
-    mapping(address => bool) public reputationWriter; // contracts allowed to bump rep
-
-    event Minted(address indexed agent, uint256 indexed tokenId);
-    event ReputationChanged(uint256 indexed tokenId, int256 delta, uint256 newScore);
-
-    constructor() ERC721("MemeAutonom Agent", "MA-AGENT") Ownable(msg.sender) {}
-
-    function mint(address to) external returns (uint256 id) {
-        require(idOf[to] == 0, "already minted");
-        id = nextId++;
-        _safeMint(to, id);
-        idOf[to] = id;
-        emit Minted(to, id);
-    }
-
-    function setReputationWriter(address w, bool ok) external onlyOwner {
-        reputationWriter[w] = ok;
-    }
-
-    function bumpReputation(address agent, int256 delta) external {
-        require(reputationWriter[msg.sender], "not authorized");
-        uint256 id = idOf[agent];
-        require(id != 0, "no identity");
-        uint256 cur = reputation[id];
-        uint256 next = delta >= 0 ? cur + uint256(delta) : (cur > uint256(-delta) ? cur - uint256(-delta) : 0);
-        reputation[id] = next;
-        emit ReputationChanged(id, delta, next);
-    }
-
-    // Soulbound: block transfers
-    function _update(address to, uint256 tokenId, address auth) internal override returns (address) {
-        address from = _ownerOf(tokenId);
-        require(from == address(0) || to == address(0), "soulbound");
-        return super._update(to, tokenId, auth);
-    }
-}
+```env
+VITE_WALLETCONNECT_PROJECT_ID=
+VITE_INDEXER_URL=
+VITE_AGENT_URL=
+VITE_MANTLE_CHAIN_ID=5000
+VITE_MANTLE_RPC=https://rpc.mantle.xyz
+VITE_MANTLE_SEPOLIA_RPC=https://rpc.sepolia.mantle.xyz
+VITE_IDENTITY_ADDRESS=
+VITE_REPUTATION_ADDRESS=
+VITE_VALIDATION_ADDRESS=
+VITE_JOB_REGISTRY_ADDRESS=
+VITE_SKILL_REGISTRY_ADDRESS=
+VITE_WALLET_FACTORY_ADDRESS=
+VITE_USDC_ADDRESS=
 ```
 
-### 3.2 `AgenticWallet.sol`
+Server-side/runtime secrets belong only in Railway service variables, a local
+`.env` file, or a secrets manager:
 
-Per-user smart account. Holds funds, exposes `execute()` callable only by
-the owner's signing key (the off-chain Byreal runtime). Could also be an
-ERC-4337 account; minimal version below.
-
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
-
-contract AgenticWallet {
-    address public immutable owner;       // human EOA controlling activation
-    address public agentSigner;           // hot key used by the off-chain runtime
-    mapping(bytes32 => bool) public skillEnabled;
-
-    event SkillToggled(bytes32 indexed skill, bool enabled);
-    event Executed(address indexed to, uint256 value, bytes data, bytes result);
-
-    modifier onlyAgent() {
-        require(msg.sender == agentSigner || msg.sender == owner, "not agent");
-        _;
-    }
-
-    constructor(address _owner, address _signer) {
-        owner = _owner;
-        agentSigner = _signer;
-    }
-
-    function setAgentSigner(address s) external {
-        require(msg.sender == owner, "only owner");
-        agentSigner = s;
-    }
-
-    function setSkill(bytes32 skill, bool enabled) external {
-        require(msg.sender == owner, "only owner");
-        skillEnabled[skill] = enabled;
-        emit SkillToggled(skill, enabled);
-    }
-
-    function execute(address to, uint256 value, bytes calldata data)
-        external onlyAgent returns (bytes memory)
-    {
-        (bool ok, bytes memory res) = to.call{value: value}(data);
-        require(ok, "exec failed");
-        emit Executed(to, value, data, res);
-        return res;
-    }
-
-    receive() external payable {}
-}
+```env
+MANTLE_RPC=
+AGENT_PRIVATE_KEY=
+AGENT_API_TOKEN=
+MANTLESCAN_API_KEY=
+IPFS_API_TOKEN=
 ```
 
-### 3.3 `AgenticWalletFactory.sol`
+## Networks
 
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+| Network        | Chain ID | RPC                              | Explorer                         |
+| -------------- | -------: | -------------------------------- | -------------------------------- |
+| Mantle Mainnet |     5000 | `https://rpc.mantle.xyz`         | `https://mantlescan.xyz`         |
+| Mantle Sepolia |     5003 | `https://rpc.sepolia.mantle.xyz` | `https://sepolia.mantlescan.xyz` |
 
-import "./AgenticWallet.sol";
-import "./ERC8004Identity.sol";
+Use Mantle Sepolia for policy rehearsals. Mantle mainnet writes require
+`ALLOW_MAINNET=1` and intentionally low wallet policy limits.
 
-contract AgenticWalletFactory {
-    ERC8004Identity public immutable identity;
-    mapping(address => address) public walletOf; // owner -> wallet
+## Contracts Scope
 
-    event WalletCreated(address indexed owner, address wallet, uint256 identityId);
+The MVP contracts are event-first, registry-driven contracts:
 
-    constructor(ERC8004Identity _id) { identity = _id; }
+- `ERC8004Identity.sol`: minimal identity registry with metadata URI. It is
+  ERC-8004-style but not a complete ERC-8004 implementation.
+- `ERC8004Reputation.sol`: append-only reputation event registry with
+  permissioned reporters and an MVP aggregate score.
+- `ERC8004Validation.sol`: request/response validation registry for verifier
+  attestations tied to agent identity ids.
+- `AgenticWalletFactory.sol`: CREATE2 wallet factory and policy-limited
+  signer-controlled wallet.
+- `SkillRegistry.sol`: skill publish/install/status/fire events.
+- `JobRegistry.sol`: USDC-settled job lifecycle.
 
-    function activate(address agentSigner) external returns (address w) {
-        require(walletOf[msg.sender] == address(0), "already activated");
-        w = address(new AgenticWallet(msg.sender, agentSigner));
-        walletOf[msg.sender] = w;
-        uint256 id = identity.mint(w);
-        emit WalletCreated(msg.sender, w, id);
-    }
-}
-```
+Production hardening still needs:
 
-### 3.4 `JobRegistry.sol`
+- Contract verification on Mantlescan.
+- External review or audit before meaningful user funds.
+- Broader adversarial tests around wallet policy, recovery, and registry abuse.
+- Monitoring around Railway runtime, indexer lag, and failed wallet actions.
 
-Open marketplace where agentic wallets post jobs, others accept &
-execute, verifiers confirm, and payout is released in USDC.
+## ERC-8004 Direction
 
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+The hackathon references ERC-8004 agent identity and reputation. This repo now
+moves beyond a simple `ERC8004Identity` registry toward three clear surfaces:
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./ERC8004Identity.sol";
+- Identity records: agent wallet, runtime signer/controller, metadata URI,
+  created time.
+- Reputation records: append-only reputation events emitted by authorized
+  registries through `ERC8004Reputation`.
+- Validation records: verifier attestations about jobs, skills, and execution
+  outcomes through `ERC8004Validation`.
 
-contract JobRegistry {
-    enum Status { Open, Accepted, Submitted, Verified, Cancelled }
+Until that work is complete, user-facing copy should say **ERC-8004-style** or
+**agent identity registry**, not full ERC-8004 compliance.
 
-    struct Job {
-        address poster;
-        address acceptor;
-        address verifier;
-        bytes32 specHash;     // hash of off-chain spec (IPFS CID)
-        uint96  bounty;       // in USDC (6 decimals)
-        uint64  deadline;
-        Status  status;
-        bytes32 resultHash;
-    }
+## Indexer Requirements
 
-    IERC20 public immutable usdc;
-    ERC8004Identity public immutable identity;
-    uint256 public nextId = 1;
-    mapping(uint256 => Job) public jobs;
-
-    event JobPosted(uint256 indexed id, address indexed poster, uint96 bounty, bytes32 specHash);
-    event JobAccepted(uint256 indexed id, address indexed acceptor);
-    event ResultSubmitted(uint256 indexed id, bytes32 resultHash);
-    event JobVerified(uint256 indexed id, address indexed verifier);
-
-    constructor(IERC20 _usdc, ERC8004Identity _id) { usdc = _usdc; identity = _id; }
-
-    function post(bytes32 specHash, uint96 bounty, uint64 deadline) external returns (uint256 id) {
-        require(usdc.transferFrom(msg.sender, address(this), bounty), "escrow failed");
-        id = nextId++;
-        jobs[id] = Job(msg.sender, address(0), address(0), specHash, bounty, deadline, Status.Open, bytes32(0));
-        emit JobPosted(id, msg.sender, bounty, specHash);
-    }
-
-    function accept(uint256 id) external {
-        Job storage j = jobs[id];
-        require(j.status == Status.Open, "not open");
-        require(block.timestamp < j.deadline, "expired");
-        j.acceptor = msg.sender;
-        j.status = Status.Accepted;
-        emit JobAccepted(id, msg.sender);
-    }
-
-    function submit(uint256 id, bytes32 resultHash) external {
-        Job storage j = jobs[id];
-        require(msg.sender == j.acceptor, "not acceptor");
-        require(j.status == Status.Accepted, "wrong state");
-        j.resultHash = resultHash;
-        j.status = Status.Submitted;
-        emit ResultSubmitted(id, resultHash);
-    }
-
-    function verify(uint256 id) external {
-        Job storage j = jobs[id];
-        require(j.status == Status.Submitted, "not submitted");
-        j.verifier = msg.sender;
-        j.status = Status.Verified;
-        require(usdc.transfer(j.acceptor, j.bounty), "payout failed");
-        identity.bumpReputation(j.acceptor, 1);
-        identity.bumpReputation(j.verifier, 1);
-        emit JobVerified(id, msg.sender);
-    }
-}
-```
-
-### 3.5 `SkillRegistry.sol`
-
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
-
-contract SkillRegistry {
-    struct Skill {
-        string  name;
-        string  metadataURI; // IPFS json: desc, role, default cli params
-        address author;
-        uint64  installs;
-    }
-    mapping(bytes32 => Skill) public skills;
-    bytes32[] public allSkills;
-
-    event SkillRegistered(bytes32 indexed key, string name, address author);
-    event SkillInstalled(bytes32 indexed key, address indexed wallet);
-
-    function register(string calldata name, string calldata metadataURI) external returns (bytes32 key) {
-        key = keccak256(bytes(name));
-        require(skills[key].author == address(0), "exists");
-        skills[key] = Skill(name, metadataURI, msg.sender, 0);
-        allSkills.push(key);
-        emit SkillRegistered(key, name, msg.sender);
-    }
-
-    function install(bytes32 key) external {
-        require(skills[key].author != address(0), "unknown");
-        skills[key].installs += 1;
-        emit SkillInstalled(key, msg.sender);
-    }
-}
-```
-
-### 3.6 Step-by-step deployment (Foundry)
-
-```bash
-# 1. Scaffold
-mkdir memeautonom-contracts && cd memeautonom-contracts
-forge init --no-commit
-forge install OpenZeppelin/openzeppelin-contracts
-
-# 2. Drop the .sol files above into src/
-
-# 3. Configure foundry.toml
-cat >> foundry.toml <<'EOF'
-[rpc_endpoints]
-mantle         = "https://rpc.mantle.xyz"
-mantle_sepolia = "https://rpc.sepolia.mantle.xyz"
-
-[etherscan]
-mantle         = { key = "${MANTLESCAN_API_KEY}", url = "https://api.mantlescan.xyz/api" }
-mantle_sepolia = { key = "${MANTLESCAN_API_KEY}", url = "https://api-sepolia.mantlescan.xyz/api" }
-EOF
-
-# 4. Export deployer key + Mantlescan key
-export PRIVATE_KEY=0x...        # fund with ~5 MNT for mainnet
-export MANTLESCAN_API_KEY=...
-
-# 5. Deploy to Sepolia first
-forge create src/ERC8004Identity.sol:ERC8004Identity \
-  --rpc-url mantle_sepolia --private-key $PRIVATE_KEY --verify
-
-forge create src/AgenticWalletFactory.sol:AgenticWalletFactory \
-  --constructor-args <ERC8004_ADDR> \
-  --rpc-url mantle_sepolia --private-key $PRIVATE_KEY --verify
-
-forge create src/JobRegistry.sol:JobRegistry \
-  --constructor-args <USDC_ADDR> <ERC8004_ADDR> \
-  --rpc-url mantle_sepolia --private-key $PRIVATE_KEY --verify
-
-forge create src/SkillRegistry.sol:SkillRegistry \
-  --rpc-url mantle_sepolia --private-key $PRIVATE_KEY --verify
-
-# 6. Wire reputation writer
-cast send <ERC8004_ADDR> "setReputationWriter(address,bool)" <JOB_REGISTRY_ADDR> true \
-  --rpc-url mantle_sepolia --private-key $PRIVATE_KEY
-
-# 7. Repeat with --rpc-url mantle for production
-```
-
-Copy each address into your `.env` as `VITE_*_ADDRESS`.
-
-Save the ABIs into `src/abi/*.json` and use them with wagmi:
-
-```ts
-import { useReadContract } from 'wagmi'
-import { abi } from '@/abi/JobRegistry.json'
-
-const { data } = useReadContract({
-  address: import.meta.env.VITE_JOB_REGISTRY_ADDRESS,
-  abi,
-  functionName: 'jobs',
-  args: [jobId],
-})
-```
-
----
-
-## 4. Indexer (powers the dashboard)
-
-The UI's leaderboard, economy stats, feed, ticker, and wallet drawer all
-need historical / aggregated data that you cannot get from a single RPC
-call. Pick one:
-
-### 4.1 Option A — The Graph (Goldsky-hosted)
-
-1. Install Graph CLI: `npm i -g @graphprotocol/graph-cli`.
-2. `graph init --product hosted-service` and point at your contracts.
-3. Define entities for `Job`, `Wallet`, `Execution`, `Skill`, `ReputationEvent`.
-4. Map events from §3 contracts to those entities.
-5. Deploy via Goldsky: https://goldsky.com → connect repo → push.
-6. Set `VITE_INDEXER_URL` to the GraphQL endpoint Goldsky gives you.
-
-### 4.2 Option B — Envio (faster, HyperIndex)
-
-1. https://envio.dev → install CLI → `pnpm envio init`.
-2. Write a TS handler per event.
-3. `pnpm envio dev`, then deploy to Envio Cloud.
-
-### 4.3 Option C — Custom indexer (full control)
-
-Run a small Node.js worker that uses `viem`'s `watchContractEvent` against
-the Mantle RPC, writes into Postgres (Lovable Cloud already provisions
-one), and exposes a GraphQL/REST API via TanStack Start server functions.
-
-### 4.4 GraphQL queries the UI needs
+The frontend needs these GraphQL views:
 
 ```graphql
-query Leaderboard {
-  wallets(first: 50, orderBy: reputation, orderDirection: desc) {
-    address role reputation jobsCompleted volumeUsdc autonomyScore activatedAt
+query WalletDetail($addr: String!) {
+  wallet(id: $addr) {
+    address
+    role
+    reputation
+    jobsCompleted
+    volumeUsdc
+    autonomyScore
+    activatedAt
+    skills {
+      name
+      status
+      fires
+    }
+    executions(first: 20, orderBy: timestamp, orderDirection: desc) {
+      timestamp
+      action
+      detail
+      txHash
+      color
+    }
+  }
+}
+
+query Leaderboard($first: Int!) {
+  wallets(first: $first, orderBy: reputation, orderDirection: desc) {
+    address
+    role
+    reputation
+    jobsCompleted
+    volumeUsdc
+    autonomyScore
+    activatedAt
+    skills {
+      name
+      status
+      fires
+    }
   }
 }
 
 query EconomyStats {
-  global(id: "global") { activeWallets jobsToday usdcSettled24h avgDecisionTimeSec }
-}
-
-query Feed($limit: Int!) {
-  events(first: $limit, orderBy: timestamp, orderDirection: desc) {
-    timestamp wallet { address } action detail color txHash
+  economyStat(id: "global") {
+    activeWallets
+    jobsToday
+    usdcSettled
+    avgDecisionMs
+    updatedAt
   }
 }
 
-query WalletDetail($addr: String!) {
-  wallet(id: $addr) {
-    address role reputation jobsCompleted volumeUsdc autonomyScore
-    skills { name status fires }
-    executions(first: 20) { timestamp action detail txHash color }
+query LatestExecutions($first: Int!) {
+  executions(first: $first, orderBy: timestamp, orderDirection: desc) {
+    timestamp
+    action
+    detail
+    txHash
+    color
+    wallet {
+      address
+    }
   }
 }
 ```
 
-Wire those into `src/lib/api.ts` with `graphql-request` + `useQuery`,
-then replace the empty arrays in `src/lib/mock.ts` consumers.
+`envio-indexer/schema.graphql` and `src/lib/api.ts` should stay aligned. The
+dashboard should not read from `src/lib/mock.ts` once the indexer is live.
 
----
+## Agent Runtime Requirements
 
-## 5. Off-chain agent runtime (Byreal)
+The runtime is the product engine. The frontend only observes and controls it.
 
-Each AgenticWallet needs an off-chain process that runs the 5-second
-decision loop, evaluates installed skills, and signs/broadcasts txs.
+Minimum runtime:
 
-### 5.1 Architecture
+- Reads wallet, skill, and job state through viem.
+- Loads installed skills.
+- Evaluates a fixed tick loop.
+- Simulates any proposed transaction.
+- Checks target allowlists, spending caps, and daily limits.
+- Sends transactions through `AgenticWallet`.
+- Persists decision logs.
+- Exposes `/health`.
+- Exposes `/decisions`.
+- Stores private keys only in Railway service variables, local env files, or a secrets manager.
 
-```
-┌─────────────── Byreal Agent (Node.js, Docker) ───────────────┐
-│  loop every 5s {                                              │
-│    state = readChain(JobRegistry, USDC, MyWallet)             │
-│    for skill in installedSkills {                             │
-│      if (skill.checkCondition(state)) {                       │
-│        action = skill.decideAction(state)                     │
-│        wallet.execute(action.to, action.value, action.data)   │
-│      }                                                        │
-│    }                                                          │
-│    persistDecisionLog()                                       │
-│  }                                                            │
-└───────────────────────────────────────────────────────────────┘
-```
+The repo includes a minimal runtime at `scripts/agent-runtime.mjs`. It is not a
+general AI framework; it is a bounded demo loop that simulates and then sends a
+single `SkillRegistry.fire` call through `AgenticWallet`. Use it to prove the
+hackathon loop before adding higher-risk skills.
 
-### 5.2 Stack
+The first skill should be deliberately low risk. Prefer a demo-job skill or
+bounded proof-of-execution skill over trading or treasury movement.
 
-- Node.js 20 + TypeScript
-- `viem` for chain reads / writes
-- Local SQLite (or Postgres) for decision log
-- Each skill = a folder under `skills/<name>/index.ts` exporting
-  `checkCondition()` and `decideAction()`.
-- Hot key (signer) stored encrypted (KMS / age) — never on disk in plain.
+## Mainnet Readiness Checklist
 
-### 5.3 Hosting
+Mantle production beta status:
 
-Run one container per active wallet on Fly.io / Railway / a small VPS.
-Or run a single multi-tenant runtime that loads each user's signer from
-KMS. Either way the Byreal runtime is **separate from this frontend**.
+- [x] `npm run lint` passes.
+- [x] `npm run build` passes.
+- [x] Contract tests cover identity, skill, job, validation, and wallet execution flows.
+- [x] Contracts deploy cleanly to Mantle mainnet through a guarded script.
+- [x] Mainnet deployment requires explicit `ALLOW_MAINNET=1` confirmation.
+- [x] Frontend routes read live connected-wallet and contract-health data.
+- [x] Wallet execution is capped by skill permissions and spend limits.
+- [x] Secrets are kept outside the frontend bundle.
+- [x] Railway Envio service can run without Hasura and serve frontend queries.
+- [x] Railway agent runtime exposes health/decisions and protects `/tick`.
+- [ ] First production wallet policy is bootstrapped with deliberately low limits.
+- [ ] Monitoring and health checks are enabled on Railway.
+- [ ] Mantlescan verification and external review are completed before meaningful user funds.
 
-### 5.4 CLI
+## Hackathon Submission Criteria
 
-The `byreal skill add <name>` UX shown in `src/routes/skills.tsx` requires
-a CLI binary. Build it as a separate `byreal` npm package; the CLI calls
-`SkillRegistry.install()` on-chain and writes the skill config into the
-local runtime config file.
+For the Turing Test Hackathon, the demo should show:
 
----
+- A Mantle contract deployment.
+- An agent wallet identity record.
+- One installed skill.
+- One autonomous, policy-limited on-chain action.
+- An emitted event.
+- Envio indexing that event.
+- A live dashboard update.
+- A clear explanation of how identity, skill fires, reputation, and execution
+  history create transparent agent benchmarking.
 
-## 6. Wiring the UI to live data (file-by-file)
+## Build Order
 
-| File | Currently uses | Replace with |
-|---|---|---|
-| `src/routes/index.tsx` (`MY_WALLET`, `FEED`, `DECISION_LOG`) | empty stubs | `useReadContract` for ERC8004 id + reputation, `useBalance` for USDC/MNT, GraphQL `Feed` + `WalletDetail` for the user's address. |
-| `src/routes/economy.tsx` (`ECONOMY_STATS`, `WALLETS`, `FEED`) | empty stubs | GraphQL `EconomyStats` + `Leaderboard` + `Feed`. |
-| `src/routes/leaderboard.tsx` (`WALLETS`, `getWalletDetail`) | empty stubs | GraphQL `Leaderboard` + `WalletDetail($addr)`. |
-| `src/routes/skills.tsx` (`SKILLS_MARKET`) | empty stub | `SkillRegistry.allSkills()` → fetch metadata JSON from IPFS. |
-| `src/components/Ticker.tsx` | empty | GraphQL subscription or polling on global stats / latest events. |
-| `src/components/NodeGraph.tsx` | random nodes | Top N wallets from `Leaderboard` query + recent `Job` edges between them. |
-| `src/components/WalletDrawer.tsx` | empty arrays | `WalletDetail($addr)` query, fired when row clicked. |
-
-Keep the existing prop shapes — the types in `src/lib/mock.ts` (`WalletRow`,
-`WalletDetail`, `FeedItem`, `Execution`, `WalletSkill`, `SkillListing`,
-`FeedColor`) are the API contract between data layer and UI. Map your
-GraphQL responses into those types in a thin `src/lib/api.ts` adapter so
-the components don't change.
-
----
-
-## 7. Storage (IPFS) for skill metadata + job specs
-
-- **Provider**: web3.storage, Pinata, or Filebase.
-- **Use case 1**: Skill metadata JSON (`name`, `description`, `role`,
-  `defaultParams`) referenced by `SkillRegistry.metadataURI`.
-- **Use case 2**: Job specs (`description`, `inputs`, `expectedOutput`)
-  referenced by `JobRegistry.specHash` (store CID, hash with keccak256).
-- **Use case 3**: Job results — same pattern.
-
-Get an API key from your provider, store as `IPFS_API_TOKEN` in Lovable
-Cloud secrets, expose an upload helper via a TanStack Start server
-function.
-
----
-
-## 8. Production checklist
-
-- [ ] Replace hardcoded `WALLETCONNECT_PROJECT_ID` in `src/lib/wagmi.ts` with `import.meta.env.VITE_WALLETCONNECT_PROJECT_ID`.
-- [ ] Switch RPCs from public to a paid provider (Ankr/BlockPI).
-- [ ] Deploy all 4 contracts to Mantle Sepolia, run a full job lifecycle, then redeploy to Mantle Mainnet.
-- [ ] **Audit** the contracts (Spearbit, Trail of Bits, or Code4rena) — they custody user USDC.
-- [ ] Stand up the indexer; confirm the 4 GraphQL queries return data.
-- [ ] Build the Byreal runtime + CLI; run one wallet end-to-end against Sepolia.
-- [ ] Add `src/lib/api.ts` with `graphql-request` and replace each `mock.ts` import.
-- [ ] Add KMS-backed signer storage for the off-chain agent.
-- [ ] Add error boundaries + loading skeletons around every contract / GraphQL hook.
-- [ ] Set `og:image` per route once you have real data + screenshots.
-- [ ] Monitoring: Sentry on the frontend, Grafana/Loki on the agent runtime, Tenderly alerts on the contracts.
-
----
-
-## 9. Quick reference — addresses & links
-
-| What | Where |
-|---|---|
-| Mantle docs | https://docs.mantle.xyz |
-| Mantle bridge | https://bridge.mantle.xyz |
-| Mantlescan | https://mantlescan.xyz |
-| Faucet (Sepolia) | https://faucet.sepolia.mantle.xyz |
-| USDC on Mantle (mainnet) | `0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9` |
-| WETH on Mantle (mainnet) | `0xdEAddEaDdeadDEadDEADDEAddEADDEAddead1111` |
-| WalletConnect Cloud | https://cloud.reown.com |
-| Goldsky | https://goldsky.com |
-| Envio | https://envio.dev |
-| The Graph | https://thegraph.com |
-
----
-
-That's the full scope. Build §3 first (you're blocked on contract
-addresses for everything else), then §4 (indexer fills the dashboard),
-then §5 (runtime makes wallets actually autonomous). The frontend in
-this repo is ready to receive data the moment those land.
-
----
-
-## 12. Skills system — how it actually works
-
-A **skill** is a pluggable capability an autonomous wallet installs. Skills are
-the unit of behavior in MemeAutonom: a wallet with no skills is inert; a wallet
-with skills proposes and executes actions on its own. There is no upper bound
-on how many skills exist — anyone can publish one to the `SkillRegistry`.
-
-### 12.1 The four parts of a skill
-
-1. **Manifest** — JSON pinned to IPFS, registered on-chain via
-   `SkillRegistry.publish(skillId, manifestCID, feePolicy)`.
-   Fields:
-   - `name`, `version`, `description`, `author`
-   - `permissions[]` — which actions the skill may propose
-     (`swap`, `transfer`, `stake`, `vote`, `read-only`, …)
-   - `triggers[]` — `tick`, `event:<topic>`, `cron:<expr>`, `webhook`
-   - `inputs[]` — required env / secrets (e.g. `RPC_URL`, `API_KEY:dexscreener`)
-   - `riskClass` — `safe` | `medium` | `high`
-   - `feePolicy` — flat / % of profit / subscription
-
-2. **Runtime handler** — code executed by the off-chain Byreal decision loop.
-   Runs in a sandboxed worker. Pure function:
-   `decide(state, ctx) → ProposedAction[]`.
-   Examples shipped in v1:
-   - `apy-scout` — polls Mantle DEX/lending APYs, proposes rebalances
-   - `executor` — signs and submits proposed swaps via the AgenticWallet
-   - `risk-guard` — vetoes proposals exceeding `riskClass` or slippage limits
-   - `verifier` — validates other wallets' job submissions for reward
-
-3. **On-chain binding** — when a user installs a skill, the AgenticWallet
-   stores `(skillId → permissionMask, spendingCap, expiry)`. The wallet's
-   `execute()` checks this mask before executing any proposal. This is the
-   only thing that lets a skill move funds.
-
-4. **Reputation hook** — every successful execution increments the wallet's
-   ERC-8004 reputation **and** the skill's global `fires` counter. Failed
-   executions slash both. This is what powers the leaderboard and the
-   "fire counts" shown in the Wallet Drawer.
-
-### 12.2 Lifecycle
-
-```
-publish skill ──► SkillRegistry (IPFS CID + feePolicy)
-       │
-user installs ──► AgenticWallet.installSkill(skillId, cap, expiry)
-       │
-Byreal loop tick ──► skill.decide() ──► ProposedAction
-       │
-risk-guard veto? ──┬─► drop + log
-                   └─► AgenticWallet.execute() ──► Mantle tx
-                                                     │
-                                              ERC8004Identity.bumpRep()
-                                              SkillRegistry.bumpFires()
-```
-
-### 12.3 Why "271" was a placeholder
-There is no fixed wallet count. The Economy page now reads
-`ECONOMY_STATS.activeWallets` from the indexer (`getEconomyStats` query in
-§5). Until your subgraph is deployed it shows `N wallets` / `—` instead of a
-fake number. The actual count is unbounded — every smart account spawned by
-`AgenticWalletFactory` increments it.
-
-### 12.4 If you "get everything" (full deploy)
-With contracts deployed (§3), indexer live (§5), and Byreal runtime running
-(§6), the loop is:
-1. User connects via RainbowKit → `AgenticWalletFactory.create()` mints them
-   a smart account + ERC-8004 identity.
-2. They browse `/skills`, install one or more skills (on-chain tx).
-3. Byreal worker picks up the new wallet, loads its installed skills,
-   begins ticking.
-4. Each successful tx updates reputation + skill fires; the indexer surfaces
-   it; the leaderboard, economy graph, and wallet drawer all light up
-   automatically — no further frontend changes needed.
-
+1. Stabilize repo and package manager. Done.
+2. Lock product scope and remove stale claims. Done.
+3. Align identity/reputation with ERC-8004 concepts. Done.
+4. Harden `AgenticWallet`. Done.
+5. Complete job, skill, validation, and wallet lifecycle tests. Done.
+6. Add deployment scripts. Done.
+7. Finish Envio codegen and Railway config. Done.
+8. Wire frontend to live wallet and contract data. Done.
+9. Build activation UX. Done.
+10. Build the runtime. Done.
+11. Bootstrap the first production policy wallet. Next step.
+12. Deploy Railway indexer/runtime and run the first observed mainnet loop.

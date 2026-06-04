@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import type { WalletDetail } from "@/lib/mock";
+import type { WalletDetail } from "@/lib/types";
 import { Tag } from "./Tag";
 
 export function WalletDrawer({
@@ -38,8 +38,10 @@ export function WalletDrawer({
       >
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border px-5 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
-            <Tag color="green" dot>LIVE</Tag>
-            <Tag color="cyan">ERC-8004</Tag>
+            <Tag color="green" dot>
+              LIVE
+            </Tag>
+            <Tag color="cyan">AGENT IDENTITY</Tag>
             <Tag color={roleColor as "cyan"}>{wallet.role}</Tag>
           </div>
           <button
@@ -62,7 +64,7 @@ export function WalletDrawer({
               {wallet.addr}
             </div>
             <div className="font-mono text-[10px] text-muted-foreground mt-1">
-              activated {wallet.since} ago · Mantle 5000
+              activated {wallet.since} ago · Mantle
             </div>
           </section>
 
@@ -75,14 +77,11 @@ export function WalletDrawer({
               <div className="font-display text-3xl text-yellow">{wallet.autonomy}%</div>
             </div>
             <div className="h-1.5 w-full bg-black/60 overflow-hidden">
-              <div
-                className="h-full bg-yellow"
-                style={{ width: `${wallet.autonomy}%` }}
-              />
+              <div className="h-full bg-yellow" style={{ width: `${wallet.autonomy}%` }} />
             </div>
             <div className="font-mono text-[10px] text-muted-foreground mt-2 leading-relaxed">
-              {wallet.autonomy}% of actions decided & signed by the wallet itself.
-              No human approval flow detected in last {wallet.jobs} jobs.
+              {wallet.autonomy}% autonomy score from indexed wallet actions. Mainnet beta wallets
+              must enforce skill limits and emergency controls.
             </div>
           </section>
 
@@ -131,17 +130,12 @@ export function WalletDrawer({
             <Head label="RECENT_EXECUTIONS" hint="last 24h · on-chain" />
             <div className="mt-3 space-y-1.5">
               {wallet.recent.map((r, i) => (
-                <div
-                  key={i}
-                  className="font-mono text-[11px] border-b border-border/50 py-2"
-                >
+                <div key={i} className="font-mono text-[11px] border-b border-border/50 py-2">
                   <div className="flex items-center justify-between gap-3">
                     <span className={`text-${r.color}`}>{r.action}</span>
                     <span className="text-muted-foreground text-[10px]">{r.t}</span>
                   </div>
-                  <div className="text-muted-foreground text-[10px] mt-1 break-all">
-                    {r.detail}
-                  </div>
+                  <div className="text-muted-foreground text-[10px] mt-1 break-all">{r.detail}</div>
                   <div className="text-foreground/60 text-[10px] mt-0.5">
                     tx <span className="text-cyan">{r.tx}</span>
                   </div>
@@ -151,8 +145,8 @@ export function WalletDrawer({
           </section>
 
           <section className="font-mono text-[10px] text-muted-foreground uppercase tracking-[0.14em] flex items-center gap-2 pt-2">
-            <Tag color="red">NO HUMAN IN LOOP</Tag>
-            <span>read-only · ERC-8004 record</span>
+            <Tag color="red">POLICY-LIMITED</Tag>
+            <span>read-only · indexed identity record</span>
           </section>
         </div>
       </aside>

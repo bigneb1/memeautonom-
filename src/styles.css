@@ -6,12 +6,11 @@
 
 @font-face {
   font-family: "Syne";
-  src: url("https://fonts.gstatic.com/s/syne/v22/8vIS7w4qzmVxsWxjBZRjr0FKM_04uT6k7Mw.woff2") format("woff2");
+  src: url("https://fonts.gstatic.com/s/syne/v22/8vIS7w4qzmVxsWxjBZRjr0FKM_04uT6k7Mw.woff2")
+    format("woff2");
   font-weight: 800;
   font-display: swap;
 }
-
-@import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&family=Syne:wght@600;700;800&display=swap");
 
 @theme inline {
   --radius-sm: 2px;
@@ -55,13 +54,13 @@
   --radius: 4px;
 
   --bg: oklch(0 0 0);
-  --yellow: oklch(0.95 0.18 105);     /* #e8ff47 */
-  --cyan: oklch(0.92 0.16 188);       /* #47ffe8 */
-  --green: oklch(0.9 0.2 148);        /* #47ff8a */
-  --orange: oklch(0.78 0.17 55);      /* #ff9147 */
-  --red: oklch(0.7 0.23 28);          /* #ff4747 */
-  --purple: oklch(0.72 0.18 310);     /* #c47fff */
-  --panel: oklch(0.13 0 0);           /* #0c0c0c */
+  --yellow: oklch(0.95 0.18 105); /* #e8ff47 */
+  --cyan: oklch(0.92 0.16 188); /* #47ffe8 */
+  --green: oklch(0.9 0.2 148); /* #47ff8a */
+  --orange: oklch(0.78 0.17 55); /* #ff9147 */
+  --red: oklch(0.7 0.23 28); /* #ff4747 */
+  --purple: oklch(0.72 0.18 310); /* #c47fff */
+  --panel: oklch(0.13 0 0); /* #0c0c0c */
 
   --background: oklch(0 0 0);
   --foreground: oklch(0.97 0 0);
@@ -79,7 +78,7 @@
   --accent-foreground: oklch(0 0 0);
   --destructive: var(--red);
   --destructive-foreground: oklch(0.97 0 0);
-  --border: oklch(0.22 0 0);          /* #1e1e1e */
+  --border: oklch(0.22 0 0); /* #1e1e1e */
   --input: oklch(0.22 0 0);
   --ring: var(--yellow);
 }
@@ -94,7 +93,8 @@
     border-color: var(--color-border);
   }
 
-  html, body {
+  html,
+  body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-mono);
@@ -122,21 +122,47 @@
     font-style: italic;
   }
 
-  .text-yellow { color: var(--yellow); }
-  .text-cyan { color: var(--cyan); }
-  .text-green { color: var(--green); }
-  .text-orange { color: var(--orange); }
-  .text-red { color: var(--red); }
-  .text-purple { color: var(--purple); }
+  .text-yellow {
+    color: var(--yellow);
+  }
+  .text-cyan {
+    color: var(--cyan);
+  }
+  .text-green {
+    color: var(--green);
+  }
+  .text-orange {
+    color: var(--orange);
+  }
+  .text-red {
+    color: var(--red);
+  }
+  .text-purple {
+    color: var(--purple);
+  }
 
-  .bg-yellow { background-color: var(--yellow); }
-  .bg-cyan { background-color: var(--cyan); }
-  .bg-green { background-color: var(--green); }
-  .bg-panel { background-color: color-mix(in oklab, var(--panel) 97%, transparent); }
+  .bg-yellow {
+    background-color: var(--yellow);
+  }
+  .bg-cyan {
+    background-color: var(--cyan);
+  }
+  .bg-green {
+    background-color: var(--green);
+  }
+  .bg-panel {
+    background-color: color-mix(in oklab, var(--panel) 97%, transparent);
+  }
 
-  .border-yellow { border-color: var(--yellow); }
-  .border-cyan { border-color: var(--cyan); }
-  .border-green { border-color: var(--green); }
+  .border-yellow {
+    border-color: var(--yellow);
+  }
+  .border-cyan {
+    border-color: var(--cyan);
+  }
+  .border-green {
+    border-color: var(--green);
+  }
 
   .panel {
     background: color-mix(in oklab, #0c0c0c 97%, transparent);
@@ -172,24 +198,41 @@
   }
 
   @keyframes pulse-dot {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.4; transform: scale(0.85); }
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.4;
+      transform: scale(0.85);
+    }
   }
   .live-dot {
     animation: pulse-dot 1.4s ease-in-out infinite;
   }
 
   @keyframes ticker {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
   }
   .ticker {
     animation: ticker 60s linear infinite;
   }
 
   @keyframes feed-in {
-    from { opacity: 0; transform: translateY(-4px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
   .feed-item {
     animation: feed-in 0.3s ease-out;

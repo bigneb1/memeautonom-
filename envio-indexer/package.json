@@ -4,10 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "envio dev",
+    "start": "node scripts/indexer-service.mjs",
+    "start:envio": "envio start",
     "codegen": "envio codegen",
     "deploy": "envio deploy"
   },
-  "devDependencies": {
-    "envio": "^2.0.0"
+  "dependencies": {
+    "envio": "^2.0.0",
+    "postgres": "3.4.1"
   }
 }

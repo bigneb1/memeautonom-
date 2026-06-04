@@ -9,9 +9,17 @@
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "deploy:mantle": "node scripts/deploy-mantle.mjs",
+    "wallet:bootstrap": "node scripts/bootstrap-wallet.mjs",
+    "agent:runtime": "node scripts/agent-runtime.mjs",
+    "agent:activate-mainnet": "node scripts/activate-agent-mainnet.mjs",
+    "deploy:preflight": "node scripts/deploy-preflight.mjs",
+    "deploy:env": "node scripts/export-deploy-env.mjs",
+    "indexer:sync-abis": "node scripts/sync-envio-abis.mjs"
   },
   "dependencies": {
+    "@byreal-io/byreal-cli": "^0.3.6",
     "@cloudflare/vite-plugin": "^1.25.5",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-accordion": "^1.2.12",
@@ -40,7 +48,6 @@
     "@radix-ui/react-toggle": "^1.1.10",
     "@radix-ui/react-toggle-group": "^1.1.11",
     "@radix-ui/react-tooltip": "^1.2.8",
-    "@rainbow-me/rainbowkit": "^2.2.10",
     "@tailwindcss/vite": "^4.2.1",
     "@tanstack/react-query": "^5.100.9",
     "@tanstack/react-router": "^1.168.0",

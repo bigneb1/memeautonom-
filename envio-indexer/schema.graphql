@@ -10,11 +10,24 @@ type Wallet @entity {
   volumeUsdc: BigInt!
   autonomyScore: Int!             # 0..100
   activatedAt: BigInt!            # unix seconds
+  identityId: BigInt
   identityUri: String
+  controller: String
   skills: [SkillInstall!]! @derivedFrom(field: "wallet")
   executions: [Execution!]! @derivedFrom(field: "wallet")
   jobsPosted: [Job!]! @derivedFrom(field: "client")
   jobsExecuted: [Job!]! @derivedFrom(field: "executor")
+  reputationRecords: [ReputationRecord!]! @derivedFrom(field: "wallet")
+  validationRequests: [ValidationRequest!]! @derivedFrom(field: "wallet")
+}
+
+type AgentIdentity @entity {
+  id: ID!                         # numeric agent identity id
+  wallet: Wallet!
+  controller: String!
+  uri: String!
+  registeredAt: BigInt!
+  updatedAt: BigInt!
 }
 
 type Skill @entity {
@@ -58,6 +71,45 @@ type Job @entity {
   resultHash: String
   postedAt: BigInt!
   completedAt: BigInt
+}
+
+type ReputationRecord @entity {
+  id: ID!                         # numeric reputation record id
+  wallet: Wallet!
+  issuer: String!
+  value: BigInt!
+  decimals: Int!
+  scoreAfter: BigInt!
+  tag1: String!
+  tag2: String!
+  uri: String!
+  fileHash: String!
+  recordedAt: BigInt!
+  txHash: String!
+}
+
+type ValidationRequest @entity {
+  id: ID!                         # requestHash
+  wallet: Wallet
+  validator: String!
+  agentId: BigInt!
+  requestURI: String!
+  requestHash: String!
+  requestedAt: BigInt!
+  response: ValidationResponse
+}
+
+type ValidationResponse @entity {
+  id: ID!                         # requestHash
+  request: ValidationRequest!
+  validator: String!
+  agentId: BigInt!
+  response: Int!
+  responseURI: String!
+  responseHash: String!
+  tag: String!
+  respondedAt: BigInt!
+  txHash: String!
 }
 
 type EconomyStat @entity {

@@ -10,39 +10,58 @@ queries used by the front-end (`src/lib/api.ts`, `src/components/WalletSkillsPan
 ```bash
 npm i -g envio
 cd envio-indexer
-pnpm install         # or npm install
+npm install
 cp .env.example .env # fill in addresses + start blocks
-pnpm envio dev       # spins up Postgres + GraphQL @ http://localhost:8080/v1/graphql
+npm run codegen
+npm run dev          # spins up Postgres + GraphQL @ http://localhost:8080/v1/graphql
 ```
+
+For Mantle Sepolia, use `MANTLE_CHAIN_ID=5003` and
+`MANTLE_RPC_URL=https://rpc.sepolia.mantle.xyz`. For Mantle mainnet, use
+`MANTLE_CHAIN_ID=5000` and `MANTLE_RPC_URL=https://rpc.mantle.xyz`.
 
 Open http://localhost:8080 and run a probe:
 
 ```graphql
-query { wallets(limit: 5, order_by: { reputation: desc }) {
-  address role reputation jobsCompleted skills { name fires status }
-} }
+query {
+  wallets(first: 5, orderBy: reputation, orderDirection: desc) {
+    address
+    role
+    reputation
+    jobsCompleted
+    skills {
+      name
+      fires
+      status
+    }
+  }
+}
 ```
 
-## 2. Deploy to hosted Envio
+## 2. Deploy to hosted Envio or Railway
 
 ```bash
-pnpm envio login
-pnpm envio deploy
+npx envio login
+npm run deploy
 # → returns https://indexer.bigdevenergy.link/<id>/v1/graphql
 ```
 
 Paste the URL in the running app at **/admin → VITE_INDEXER_URL**, or set as
 a build env var and republish.
 
+For Railway, use `RAILWAY.md`. The indexer service needs the same contract
+addresses and one Railway Postgres plugin. `npm start` runs
+`scripts/indexer-service.mjs`, which starts `envio start` internally with
+`ENVIO_HASURA=false` and exposes the frontend read model at `/v1/graphql` from
+the same service.
+
 ## 3. Files
 
 - `config.yaml` — networks, contracts, ABIs, start blocks
-- `schema.graphql` — Wallet / Skill / SkillInstall / Execution / Job entities
-- `src/EventHandlers.ts` — handler stubs for every event in the 4 contracts
+- `schema.graphql` — Wallet / identity / reputation / validation / skill / job entities
+- `src/EventHandlers.ts` — handlers for core events plus MVP economy aggregation
 - `abis/*.json` — copy ABIs from `forge build` output:
   ```bash
-  jq .abi ../contracts/out/JobRegistry.sol/JobRegistry.json > abis/JobRegistry.json
-  jq .abi ../contracts/out/SkillRegistry.sol/SkillRegistry.json > abis/SkillRegistry.json
-  jq .abi ../contracts/out/ERC8004Identity.sol/ERC8004Identity.json > abis/ERC8004Identity.json
-  jq .abi ../contracts/out/AgenticWalletFactory.sol/AgenticWalletFactory.json > abis/AgenticWalletFactory.json
+  cd ..
+  npm run indexer:sync-abis
   ```

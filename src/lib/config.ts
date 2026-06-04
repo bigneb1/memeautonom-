@@ -1,5 +1,5 @@
 // Runtime-overridable config. Reads from build-time VITE_* env vars first,
-// then falls back to localStorage overrides set via the /admin page.
+// then falls back to browser-local overrides for operator diagnostics.
 // This lets you wire endpoints + contract addresses without redeploying.
 
 const LS_KEY = "memeautonom.config.v1";
@@ -7,10 +7,13 @@ const LS_KEY = "memeautonom.config.v1";
 export type AppConfig = {
   indexerUrl: string;
   agentUrl: string;
-  agentToken: string;
+  mantleChainId: number;
   mantleSepoliaRpc: string;
+  mantleRpc: string;
   addresses: {
     identity: string;
+    reputation: string;
+    validation: string;
     jobRegistry: string;
     skillRegistry: string;
     walletFactory: string;
@@ -23,11 +26,13 @@ const env = import.meta.env;
 const DEFAULTS: AppConfig = {
   indexerUrl: (env.VITE_INDEXER_URL as string) || "",
   agentUrl: (env.VITE_AGENT_URL as string) || "",
-  agentToken: (env.VITE_AGENT_TOKEN as string) || "",
-  mantleSepoliaRpc:
-    (env.VITE_MANTLE_SEPOLIA_RPC as string) || "https://rpc.sepolia.mantle.xyz",
+  mantleChainId: parseChainId(env.VITE_MANTLE_CHAIN_ID, 5003),
+  mantleSepoliaRpc: (env.VITE_MANTLE_SEPOLIA_RPC as string) || "https://rpc.sepolia.mantle.xyz",
+  mantleRpc: (env.VITE_MANTLE_RPC as string) || "https://rpc.mantle.xyz",
   addresses: {
     identity: (env.VITE_IDENTITY_ADDRESS as string) || "",
+    reputation: (env.VITE_REPUTATION_ADDRESS as string) || "",
+    validation: (env.VITE_VALIDATION_ADDRESS as string) || "",
     jobRegistry: (env.VITE_JOB_REGISTRY_ADDRESS as string) || "",
     skillRegistry: (env.VITE_SKILL_REGISTRY_ADDRESS as string) || "",
     walletFactory: (env.VITE_WALLET_FACTORY_ADDRESS as string) || "",
@@ -69,4 +74,9 @@ export function resetConfig() {
 
 export function isHex40(addr: string) {
   return /^0x[a-fA-F0-9]{40}$/.test(addr);
+}
+
+function parseChainId(value: unknown, fallback: number) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 }

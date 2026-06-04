@@ -3,20 +3,17 @@ import { useEffect, useState } from "react";
 import { Tag } from "@/components/Tag";
 import { AgentStatusWidget } from "@/components/AgentStatusWidget";
 import { DiagnosticsPanel } from "@/components/DiagnosticsPanel";
-import {
-  getConfig,
-  saveConfig,
-  resetConfig,
-  isHex40,
-  type AppConfig,
-} from "@/lib/config";
+import { getConfig, saveConfig, resetConfig, isHex40, type AppConfig } from "@/lib/config";
 
 export const Route = createFileRoute("/admin")({
   component: Admin,
   head: () => ({
     meta: [
       { title: "Admin · MemeAutonom" },
-      { name: "description", content: "Configure indexer URL, agent endpoint, and on-chain addresses." },
+      {
+        name: "description",
+        content: "Configure indexer URL, agent endpoint, and on-chain addresses.",
+      },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
@@ -29,12 +26,10 @@ function Admin() {
   useEffect(() => {
     const onChange = () => setCfg(getConfig());
     window.addEventListener("memeautonom:config-changed", onChange);
-    return () =>
-      window.removeEventListener("memeautonom:config-changed", onChange);
+    return () => window.removeEventListener("memeautonom:config-changed", onChange);
   }, []);
 
-  const update = (patch: Partial<AppConfig>) =>
-    setCfg((c) => ({ ...c, ...patch }));
+  const update = (patch: Partial<AppConfig>) => setCfg((c) => ({ ...c, ...patch }));
   const updateAddr = (k: keyof AppConfig["addresses"], v: string) =>
     setCfg((c) => ({ ...c, addresses: { ...c.addresses, [k]: v } }));
 
@@ -45,7 +40,11 @@ function Admin() {
   };
 
   const onReset = () => {
-    if (confirm("Reset all overrides? This clears localStorage values and reverts to build-time env defaults.")) {
+    if (
+      confirm(
+        "Reset all overrides? This clears localStorage values and reverts to build-time env defaults.",
+      )
+    ) {
       resetConfig();
       setCfg(getConfig());
     }
@@ -63,9 +62,9 @@ function Admin() {
         </h1>
         <p className="font-mono text-xs text-muted-foreground mt-3 max-w-2xl">
           Values are stored in this browser's localStorage and override build-time
-          <code className="text-cyan"> VITE_*</code> env vars at runtime. To make
-          changes permanent for all visitors, set them as build env vars (see
-          INTEGRATION.md → "Wire to build/deploy" below).
+          <code className="text-cyan"> VITE_*</code> env vars at runtime. To make changes permanent
+          for all visitors, set them as build env vars (see INTEGRATION.md → "Wire to build/deploy"
+          below).
         </p>
       </section>
 
@@ -79,17 +78,17 @@ function Admin() {
         />
         <Field
           label="VITE_AGENT_URL"
-          hint="Hosted Byreal agent base URL (no trailing slash)"
+          hint="Hosted agent runtime base URL (no trailing slash)"
           value={cfg.agentUrl}
           onChange={(v) => update({ agentUrl: v })}
           placeholder="https://my-agent.fly.dev"
         />
         <Field
-          label="VITE_AGENT_TOKEN"
-          hint="Bearer token (AGENT_API_TOKEN from agent .env)"
-          value={cfg.agentToken}
-          onChange={(v) => update({ agentToken: v })}
-          placeholder="hex token"
+          label="VITE_MANTLE_CHAIN_ID"
+          hint="5003 for Sepolia demo, 5000 for Mantle mainnet"
+          value={String(cfg.mantleChainId)}
+          onChange={(v) => update({ mantleChainId: Number(v) || 5003 })}
+          placeholder="5003"
         />
         <Field
           label="VITE_MANTLE_SEPOLIA_RPC"
@@ -98,18 +97,55 @@ function Admin() {
           onChange={(v) => update({ mantleSepoliaRpc: v })}
           placeholder="https://rpc.sepolia.mantle.xyz"
         />
+        <Field
+          label="VITE_MANTLE_RPC"
+          hint="Override Mantle mainnet RPC URL"
+          value={cfg.mantleRpc}
+          onChange={(v) => update({ mantleRpc: v })}
+          placeholder="https://rpc.mantle.xyz"
+        />
       </section>
 
       <section className="panel p-5">
         <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-foreground border-b border-border pb-2 mb-4">
-          {">"} CONTRACT_ADDRESSES · MANTLE_SEPOLIA
+          {">"} CONTRACT_ADDRESSES · MANTLE
         </div>
         <div className="grid lg:grid-cols-2 gap-5">
-          <AddrField label="VITE_IDENTITY_ADDRESS" value={cfg.addresses.identity} onChange={(v) => updateAddr("identity", v)} />
-          <AddrField label="VITE_JOB_REGISTRY_ADDRESS" value={cfg.addresses.jobRegistry} onChange={(v) => updateAddr("jobRegistry", v)} />
-          <AddrField label="VITE_SKILL_REGISTRY_ADDRESS" value={cfg.addresses.skillRegistry} onChange={(v) => updateAddr("skillRegistry", v)} />
-          <AddrField label="VITE_WALLET_FACTORY_ADDRESS" value={cfg.addresses.walletFactory} onChange={(v) => updateAddr("walletFactory", v)} />
-          <AddrField label="VITE_USDC_ADDRESS" value={cfg.addresses.usdc} onChange={(v) => updateAddr("usdc", v)} />
+          <AddrField
+            label="VITE_IDENTITY_ADDRESS"
+            value={cfg.addresses.identity}
+            onChange={(v) => updateAddr("identity", v)}
+          />
+          <AddrField
+            label="VITE_REPUTATION_ADDRESS"
+            value={cfg.addresses.reputation}
+            onChange={(v) => updateAddr("reputation", v)}
+          />
+          <AddrField
+            label="VITE_VALIDATION_ADDRESS"
+            value={cfg.addresses.validation}
+            onChange={(v) => updateAddr("validation", v)}
+          />
+          <AddrField
+            label="VITE_JOB_REGISTRY_ADDRESS"
+            value={cfg.addresses.jobRegistry}
+            onChange={(v) => updateAddr("jobRegistry", v)}
+          />
+          <AddrField
+            label="VITE_SKILL_REGISTRY_ADDRESS"
+            value={cfg.addresses.skillRegistry}
+            onChange={(v) => updateAddr("skillRegistry", v)}
+          />
+          <AddrField
+            label="VITE_WALLET_FACTORY_ADDRESS"
+            value={cfg.addresses.walletFactory}
+            onChange={(v) => updateAddr("walletFactory", v)}
+          />
+          <AddrField
+            label="VITE_USDC_ADDRESS"
+            value={cfg.addresses.usdc}
+            onChange={(v) => updateAddr("usdc", v)}
+          />
         </div>
       </section>
 
@@ -143,25 +179,25 @@ function Admin() {
         <ol className="space-y-3 font-mono text-[11px] text-muted-foreground leading-relaxed list-decimal list-inside">
           <li>
             <span className="text-foreground">Local dev:</span> create a{" "}
-            <code className="text-cyan">.env.local</code> at the project root (gitignored)
-            and paste each <code className="text-cyan">VITE_*</code> from above. Restart{" "}
-            <code className="text-cyan">bun dev</code>.
+            <code className="text-cyan">.env.local</code> at the project root (gitignored) and paste
+            each <code className="text-cyan">VITE_*</code> from above. Restart{" "}
+            <code className="text-cyan">npm run dev</code>.
           </li>
           <li>
-            <span className="text-foreground">Lovable Cloud / hosted:</span> open
-            Project → Settings → <span className="text-yellow">Build Secrets</span> and
-            add each <code className="text-cyan">VITE_*</code> key + value. Republish.
+            <span className="text-foreground">Lovable Cloud / hosted:</span> open Project → Settings
+            → <span className="text-yellow">Build Secrets</span> and add each{" "}
+            <code className="text-cyan">VITE_*</code> key + value. Republish.
           </li>
           <li>
             <span className="text-foreground">Self-hosted (Vercel / Netlify / Cloudflare):</span>{" "}
-            add the same keys under that platform's "Environment Variables" for
-            the build environment. Re-deploy.
+            add the same keys under that platform's "Environment Variables" for the build
+            environment. Re-deploy.
           </li>
           <li>
             <span className="text-foreground">Verify:</span> after a fresh build, click
             <span className="text-yellow"> RESET</span> above, then{" "}
-            <span className="text-yellow">RUN_PROBES</span> in the diagnostics
-            panel. All probes should return <span className="text-green">OK</span>.
+            <span className="text-yellow">RUN_PROBES</span> in the diagnostics panel. All probes
+            should return <span className="text-green">OK</span>.
           </li>
         </ol>
       </section>

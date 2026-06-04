@@ -1,25 +1,38 @@
-# Envio HyperIndex config — MemeAutonom on Mantle Sepolia
 name: memeautonom
-description: Indexes ERC8004Identity, JobRegistry, SkillRegistry, AgenticWalletFactory on Mantle Sepolia
+description: Indexes MemeAutonom events on Mantle.
 schema: ./schema.graphql
 
 networks:
-  - id: 5003 # Mantle Sepolia
+  - id: ${MANTLE_CHAIN_ID}
     rpc_config:
-      url: ${MANTLE_SEPOLIA_RPC}
+      url: "${MANTLE_RPC_URL}"
     start_block: ${START_BLOCK}
     contracts:
       - name: ERC8004Identity
-        address:
-          - ${IDENTITY_ADDRESS}
+        address: "${IDENTITY_ADDRESS}"
         handler: src/EventHandlers.ts
         events:
-          - event: IdentityRegistered(address indexed wallet, uint256 indexed id, string uri)
+          - event: IdentityRegistered(address indexed wallet, uint256 indexed id, address indexed controller, string uri)
           - event: IdentityUpdated(address indexed wallet, string uri)
+          - event: ControllerUpdated(address indexed wallet, address indexed controller)
+          - event: RegistrarUpdated(address indexed registrar, bool allowed)
+
+      - name: ERC8004Reputation
+        address: "${REPUTATION_ADDRESS}"
+        handler: src/EventHandlers.ts
+        events:
+          - event: ReputationRecorded(address indexed wallet, uint256 indexed recordId, address indexed issuer, int128 value, uint8 decimals, int256 scoreAfter, string tag1, string tag2, string uri, bytes32 fileHash)
+          - event: ReporterUpdated(address indexed reporter, bool allowed)
+
+      - name: ERC8004Validation
+        address: "${VALIDATION_ADDRESS}"
+        handler: src/EventHandlers.ts
+        events:
+          - event: ValidationRequest(address indexed validatorAddress, uint256 indexed agentId, string requestURI, bytes32 indexed requestHash)
+          - event: ValidationResponse(address indexed validatorAddress, uint256 indexed agentId, bytes32 indexed requestHash, uint8 response, string responseURI, bytes32 responseHash, string tag)
 
       - name: SkillRegistry
-        address:
-          - ${SKILL_REGISTRY_ADDRESS}
+        address: "${SKILL_REGISTRY_ADDRESS}"
         handler: src/EventHandlers.ts
         events:
           - event: SkillPublished(bytes32 indexed id, address indexed author, string uri, string name)
@@ -29,8 +42,7 @@ networks:
           - event: SkillStatusChanged(bytes32 indexed id, address indexed wallet, uint8 status)
 
       - name: JobRegistry
-        address:
-          - ${JOB_REGISTRY_ADDRESS}
+        address: "${JOB_REGISTRY_ADDRESS}"
         handler: src/EventHandlers.ts
         events:
           - event: JobPosted(uint256 indexed id, address indexed client, uint256 budget, string spec)
@@ -40,8 +52,7 @@ networks:
           - event: JobCancelled(uint256 indexed id)
 
       - name: AgenticWalletFactory
-        address:
-          - ${WALLET_FACTORY_ADDRESS}
+        address: "${WALLET_FACTORY_ADDRESS}"
         handler: src/EventHandlers.ts
         events:
           - event: WalletCreated(address indexed wallet, address indexed owner, address indexed signer, uint256 salt)

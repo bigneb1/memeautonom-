@@ -14,6 +14,14 @@ dist-ssr
 .vinxi
 .tanstack/**
 .nitro
+deployments.env
+agent.deployments.env
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+envio-indexer/generated/*
+!envio-indexer/generated/
+!envio-indexer/generated/pnpm-workspace.yaml
 *.local
 
 # Wrangler / Cloudflare

@@ -1,45 +1,21 @@
 import { http, createConfig } from "wagmi";
 import { mantle, mantleSepoliaTestnet } from "wagmi/chains";
-import { connectorsForWallets } from "@rainbow-me/rainbowkit";
-import {
-  injectedWallet,
-  metaMaskWallet,
-  rainbowWallet,
-  walletConnectWallet,
-  coinbaseWallet,
-} from "@rainbow-me/rainbowkit/wallets";
+import { injected } from "wagmi/connectors";
 
-// Publishable WalletConnect Cloud project id. Replace with your own at
-// https://cloud.walletconnect.com — safe to commit (publishable key).
-export const WALLETCONNECT_PROJECT_ID =
-  (import.meta.env.VITE_WALLETCONNECT_PROJECT_ID as string | undefined) ||
-  "f0d6f8162be1beccf221b4e2f8bd7026";
-
-// Mantle Sepolia RPC. Override with VITE_MANTLE_SEPOLIA_RPC at build time
-// (e.g. an Ankr private endpoint). Falls back to the public RPC.
+// Mantle RPC endpoints. Override with VITE_MANTLE_RPC / VITE_MANTLE_SEPOLIA_RPC
+// at build time (e.g. private endpoints). Falls back to public RPCs.
+const MANTLE_RPC =
+  (import.meta.env.VITE_MANTLE_RPC as string | undefined) || "https://rpc.mantle.xyz";
 const MANTLE_SEPOLIA_RPC =
   (import.meta.env.VITE_MANTLE_SEPOLIA_RPC as string | undefined) ||
   "https://rpc.sepolia.mantle.xyz";
 
-const connectors = connectorsForWallets(
-  [
-    {
-      groupName: "Recommended",
-      wallets: [injectedWallet, metaMaskWallet, rainbowWallet, walletConnectWallet, coinbaseWallet],
-    },
-  ],
-  {
-    appName: "MemeAutonom",
-    projectId: WALLETCONNECT_PROJECT_ID,
-  }
-);
-
 export const wagmiConfig = createConfig({
   chains: [mantle, mantleSepoliaTestnet],
-  connectors,
+  connectors: [injected({ shimDisconnect: true, unstable_shimAsyncInject: 1_000 })],
   ssr: true,
   transports: {
-    [mantle.id]: http("https://rpc.mantle.xyz"),
+    [mantle.id]: http(MANTLE_RPC),
     [mantleSepoliaTestnet.id]: http(MANTLE_SEPOLIA_RPC),
   },
 });

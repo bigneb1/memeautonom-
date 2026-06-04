@@ -1,32 +1,41 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Tag } from "@/components/Tag";
-import { SKILLS_MARKET } from "@/lib/mock";
+import type { SkillListing } from "@/lib/types";
 import { WalletSkillsPanel } from "@/components/WalletSkillsPanel";
 import { useState } from "react";
+import { useSkillsMarket } from "@/lib/api";
 
 export const Route = createFileRoute("/skills")({
   component: Skills,
   head: () => ({
     meta: [
       { title: "Skills Market · MemeAutonom" },
-      { name: "description", content: "Browse decision-module skills. Install via Byreal CLI. Wallets fire them autonomously." },
+      {
+        name: "description",
+        content:
+          "Browse bounded decision-module skills that agent wallets can execute through a runtime.",
+      },
     ],
   }),
 });
 
 function Skills() {
+  const { data: skills = [], isLoading } = useSkillsMarket(20);
+
   return (
     <div className="space-y-6">
       <section>
         <div className="flex items-center gap-2 mb-3">
           <Tag color="cyan">SKILLS_MARKET</Tag>
-          <Tag color="red">NO MANUAL TRIGGER</Tag>
+          <Tag color="red">BOUNDED EXECUTION</Tag>
         </div>
         <h1 className="font-display text-4xl md:text-5xl text-foreground leading-[0.95]">
-          Skills are <span className="font-serif-italic text-yellow font-normal">decision modules</span>.
+          Skills are{" "}
+          <span className="font-serif-italic text-yellow font-normal">decision modules</span>.
         </h1>
         <p className="font-mono text-xs text-muted-foreground mt-3 max-w-2xl">
-          Each skill = a condition checker + an action executor. Install via the Byreal CLI. Skills run inside the wallet's 5-second decision loop. You never trigger them — the wallet does, when conditions are met.
+          Each skill should define a condition checker, an action proposal, and a policy envelope.
+          The runtime executes only after simulation and wallet-level limits pass.
         </p>
       </section>
 
@@ -42,16 +51,66 @@ function Skills() {
         <WalletSkillsPanel mode="top" limit={6} />
       </section>
 
+      <section className="panel p-5 sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-2">
+          <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-foreground">
+            {">"} BYREAL_AGENT_SKILL
+          </div>
+          <Tag color="green">INSTALLED PACKAGE · @byreal-io/byreal-cli</Tag>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          <Command label="DISCOVER" command="byreal-cli skill" />
+          <Command label="CATALOG" command="byreal-cli catalog list" />
+          <Command
+            label="SAFE PREVIEW"
+            command="BYREAL_ENABLED=true BYREAL_ARGS='overview -o json' npm run agent:runtime"
+          />
+        </div>
+      </section>
+
       <section className="grid md:grid-cols-2 gap-5">
-        {SKILLS_MARKET.map((s) => (
-          <SkillCard key={s.name} skill={s} />
-        ))}
+        {skills.length === 0 ? (
+          <div className="md:col-span-2 panel p-6 text-center">
+            <div className="font-display text-xl text-yellow">
+              {isLoading ? "LOADING SKILLS" : "NO SKILLS INDEXED"}
+            </div>
+            <div className="font-mono text-xs text-muted-foreground mt-2">
+              Publish skills through SkillRegistry and run the Envio indexer to populate this
+              market.
+            </div>
+          </div>
+        ) : (
+          skills.map((s) => <SkillCard key={s.name} skill={s} />)
+        )}
       </section>
     </div>
   );
 }
 
-function SkillCard({ skill }: { skill: typeof SKILLS_MARKET[number] }) {
+function Command({ label, command }: { label: string; command: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    navigator.clipboard.writeText(command);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1400);
+  };
+  return (
+    <button
+      onClick={copy}
+      className="border border-border bg-black/40 p-3 text-left hover:border-yellow/60"
+    >
+      <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
+        {label}
+      </div>
+      <div className="mt-2 break-all font-mono text-[11px] text-cyan">$ {command}</div>
+      <div className="mt-2 font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
+        {copied ? "copied" : "copy"}
+      </div>
+    </button>
+  );
+}
+
+function SkillCard({ skill }: { skill: SkillListing }) {
   const [copied, setCopied] = useState(false);
   const copy = () => {
     navigator.clipboard.writeText(skill.cli);
@@ -59,7 +118,8 @@ function SkillCard({ skill }: { skill: typeof SKILLS_MARKET[number] }) {
     setTimeout(() => setCopied(false), 1400);
   };
 
-  const roleColor = skill.role === "SCOUT" ? "yellow" : skill.role === "EXECUTOR" ? "cyan" : "purple";
+  const roleColor =
+    skill.role === "SCOUT" ? "yellow" : skill.role === "EXECUTOR" ? "cyan" : "purple";
 
   return (
     <div className="panel p-6 flex flex-col">
@@ -68,7 +128,9 @@ function SkillCard({ skill }: { skill: typeof SKILLS_MARKET[number] }) {
           <Tag color={roleColor as "yellow"}>{skill.role}</Tag>
           <Tag color="muted">FIRES · {skill.fires}</Tag>
         </div>
-        <span className="font-mono text-[10px] text-muted-foreground">{skill.installs} installs</span>
+        <span className="font-mono text-[10px] text-muted-foreground">
+          {skill.installs} installs
+        </span>
       </div>
 
       <div className="font-display text-2xl text-foreground">{skill.name}</div>
@@ -90,7 +152,7 @@ function SkillCard({ skill }: { skill: typeof SKILLS_MARKET[number] }) {
           </span>
         </button>
         <div className="font-mono text-[10px] text-muted-foreground mt-2 uppercase tracking-[0.1em]">
-          → wallet decides when to fire · zero approval flows
+          → runtime proposes · wallet limits enforce · events prove execution
         </div>
       </div>
     </div>

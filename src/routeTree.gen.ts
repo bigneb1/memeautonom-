@@ -12,8 +12,12 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SkillsRouteImport } from './routes/skills'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as EconomyRouteImport } from './routes/economy'
+import { Route as DemoRouteImport } from './routes/demo'
+import { Route as BootstrapRouteImport } from './routes/bootstrap'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as ActivateRouteImport } from './routes/activate'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as WalletAddressRouteImport } from './routes/wallet.$address'
 
 const SkillsRoute = SkillsRouteImport.update({
   id: '/skills',
@@ -30,9 +34,24 @@ const EconomyRoute = EconomyRouteImport.update({
   path: '/economy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DemoRoute = DemoRouteImport.update({
+  id: '/demo',
+  path: '/demo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BootstrapRoute = BootstrapRouteImport.update({
+  id: '/bootstrap',
+  path: '/bootstrap',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ActivateRoute = ActivateRouteImport.update({
+  id: '/activate',
+  path: '/activate',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -40,43 +59,92 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WalletAddressRoute = WalletAddressRouteImport.update({
+  id: '/wallet/$address',
+  path: '/wallet/$address',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/activate': typeof ActivateRoute
   '/admin': typeof AdminRoute
+  '/bootstrap': typeof BootstrapRoute
+  '/demo': typeof DemoRoute
   '/economy': typeof EconomyRoute
   '/leaderboard': typeof LeaderboardRoute
   '/skills': typeof SkillsRoute
+  '/wallet/$address': typeof WalletAddressRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/activate': typeof ActivateRoute
   '/admin': typeof AdminRoute
+  '/bootstrap': typeof BootstrapRoute
+  '/demo': typeof DemoRoute
   '/economy': typeof EconomyRoute
   '/leaderboard': typeof LeaderboardRoute
   '/skills': typeof SkillsRoute
+  '/wallet/$address': typeof WalletAddressRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/activate': typeof ActivateRoute
   '/admin': typeof AdminRoute
+  '/bootstrap': typeof BootstrapRoute
+  '/demo': typeof DemoRoute
   '/economy': typeof EconomyRoute
   '/leaderboard': typeof LeaderboardRoute
   '/skills': typeof SkillsRoute
+  '/wallet/$address': typeof WalletAddressRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/economy' | '/leaderboard' | '/skills'
+  fullPaths:
+    | '/'
+    | '/activate'
+    | '/admin'
+    | '/bootstrap'
+    | '/demo'
+    | '/economy'
+    | '/leaderboard'
+    | '/skills'
+    | '/wallet/$address'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/economy' | '/leaderboard' | '/skills'
-  id: '__root__' | '/' | '/admin' | '/economy' | '/leaderboard' | '/skills'
+  to:
+    | '/'
+    | '/activate'
+    | '/admin'
+    | '/bootstrap'
+    | '/demo'
+    | '/economy'
+    | '/leaderboard'
+    | '/skills'
+    | '/wallet/$address'
+  id:
+    | '__root__'
+    | '/'
+    | '/activate'
+    | '/admin'
+    | '/bootstrap'
+    | '/demo'
+    | '/economy'
+    | '/leaderboard'
+    | '/skills'
+    | '/wallet/$address'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ActivateRoute: typeof ActivateRoute
   AdminRoute: typeof AdminRoute
+  BootstrapRoute: typeof BootstrapRoute
+  DemoRoute: typeof DemoRoute
   EconomyRoute: typeof EconomyRoute
   LeaderboardRoute: typeof LeaderboardRoute
   SkillsRoute: typeof SkillsRoute
+  WalletAddressRoute: typeof WalletAddressRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -102,11 +170,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EconomyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/demo': {
+      id: '/demo'
+      path: '/demo'
+      fullPath: '/demo'
+      preLoaderRoute: typeof DemoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bootstrap': {
+      id: '/bootstrap'
+      path: '/bootstrap'
+      fullPath: '/bootstrap'
+      preLoaderRoute: typeof BootstrapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin': {
       id: '/admin'
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/activate': {
+      id: '/activate'
+      path: '/activate'
+      fullPath: '/activate'
+      preLoaderRoute: typeof ActivateRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -116,15 +205,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/wallet/$address': {
+      id: '/wallet/$address'
+      path: '/wallet/$address'
+      fullPath: '/wallet/$address'
+      preLoaderRoute: typeof WalletAddressRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ActivateRoute: ActivateRoute,
   AdminRoute: AdminRoute,
+  BootstrapRoute: BootstrapRoute,
+  DemoRoute: DemoRoute,
   EconomyRoute: EconomyRoute,
   LeaderboardRoute: LeaderboardRoute,
   SkillsRoute: SkillsRoute,
+  WalletAddressRoute: WalletAddressRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

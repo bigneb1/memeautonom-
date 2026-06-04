@@ -14,6 +14,18 @@ pragma solidity ^0.8.24;
  *           SkillFired(bytes32 id, address wallet, bytes32 actionHash)
  *           SkillStatusChanged(bytes32 id, address wallet, uint8 status) // 0=paused,1=active
  */
+interface IReputationRegistry {
+    function record(
+        address wallet,
+        int128 value,
+        uint8 decimals,
+        string calldata tag1,
+        string calldata tag2,
+        string calldata uri,
+        bytes32 fileHash
+    ) external returns (uint256);
+}
+
 contract SkillRegistry {
     struct Skill {
         address author;
@@ -27,15 +39,34 @@ contract SkillRegistry {
     mapping(bytes32 => Skill) public skills;
     mapping(bytes32 => mapping(address => bool)) public installed;
     mapping(bytes32 => mapping(address => uint8)) public statusOf; // 0=paused 1=active
+    address public owner;
+    IReputationRegistry public reputationRegistry;
 
     event SkillPublished(bytes32 indexed id, address indexed author, string uri, string name);
     event SkillInstalled(bytes32 indexed id, address indexed wallet);
     event SkillUninstalled(bytes32 indexed id, address indexed wallet);
     event SkillFired(bytes32 indexed id, address indexed wallet, bytes32 actionHash);
     event SkillStatusChanged(bytes32 indexed id, address indexed wallet, uint8 status);
+    event ReputationRegistryUpdated(address indexed reputationRegistry);
 
     error AlreadyPublished();
     error NotInstalled();
+    error SkillPaused();
+    error NotOwner();
+
+    constructor() {
+        owner = msg.sender;
+    }
+
+    modifier onlyOwner() {
+        if (msg.sender != owner) revert NotOwner();
+        _;
+    }
+
+    function setReputationRegistry(address registry) external onlyOwner {
+        reputationRegistry = IReputationRegistry(registry);
+        emit ReputationRegistryUpdated(registry);
+    }
 
     function publish(string calldata name, string calldata uri) external returns (bytes32 id) {
         id = keccak256(abi.encode(msg.sender, name));
@@ -75,7 +106,12 @@ contract SkillRegistry {
     /// @notice Called by the wallet itself when its decision loop fires the skill.
     function fire(bytes32 id, bytes32 actionHash) external {
         if (!installed[id][msg.sender]) revert NotInstalled();
-        skills[id].fires += 1;
+        if (statusOf[id][msg.sender] != 1) revert SkillPaused();
+        Skill storage skill = skills[id];
+        skill.fires += 1;
         emit SkillFired(id, msg.sender, actionHash);
+        if (address(reputationRegistry) != address(0)) {
+            reputationRegistry.record(msg.sender, 1, 0, "skill-fire", skill.name, skill.uri, actionHash);
+        }
     }
 }

@@ -1,7 +1,32 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import { Link } from "@tanstack/react-router";
 
-export function NodeGraph({ highlight }: { highlight?: string }) {
+export function NodeGraph({
+  highlight,
+  wallets = [],
+}: {
+  highlight?: string;
+  wallets?: { addr: string; role: string; rep: number }[];
+}) {
   const ref = useRef<HTMLCanvasElement>(null);
+  const overlayNodes = useMemo(() => {
+    const source =
+      wallets.length > 0
+        ? wallets.slice(0, 8)
+        : highlight
+          ? [{ addr: highlight, role: "YOU", rep: 0 }]
+          : [];
+    return source.map((wallet, i) => {
+      const angle = (Math.PI * 2 * i) / Math.max(1, source.length);
+      const radius = source.length === 1 ? 0 : 34;
+      return {
+        wallet,
+        left: 50 + Math.cos(angle) * radius,
+        top: 50 + Math.sin(angle) * radius,
+        primary: wallet.addr.toLowerCase() === highlight?.toLowerCase(),
+      };
+    });
+  }, [highlight, wallets]);
 
   useEffect(() => {
     const canvas = ref.current;
@@ -25,13 +50,22 @@ export function NodeGraph({ highlight }: { highlight?: string }) {
 
     type Node = { x: number; y: number; r: number; label: string; color: string; isMe: boolean };
     const colors = ["#e8ff47", "#47ffe8", "#47ff8a", "#c47fff", "#ff9147"];
-    const count = 28;
+    const count = Math.max(12, wallets.length || 28);
     const nodes: Node[] = Array.from({ length: count }, (_, i) => {
-      const label = i === 0 && highlight ? highlight : `0x${(0x1000 + i * 0x91).toString(16).slice(0, 4)}`;
+      const wallet = wallets[i];
+      const label = wallet
+        ? wallet.addr
+        : i === 0 && highlight
+          ? highlight
+          : `0x${(0x1000 + i * 0x91).toString(16).slice(0, 4)}`;
       return {
         x: Math.random() * W(),
         y: Math.random() * H(),
-        r: i === 0 && highlight ? 6 : 3 + Math.random() * 4,
+        r: wallet
+          ? Math.min(8, 3 + Math.max(1, wallet.rep) / 20)
+          : i === 0 && highlight
+            ? 6
+            : 3 + Math.random() * 4,
         label,
         color: i === 0 && highlight ? "#e8ff47" : colors[i % colors.length],
         isMe: i === 0 && !!highlight,
@@ -130,7 +164,44 @@ export function NodeGraph({ highlight }: { highlight?: string }) {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
     };
-  }, [highlight]);
+  }, [highlight, wallets]);
 
-  return <canvas ref={ref} className="w-full h-full block" />;
+  return (
+    <div className="relative h-full w-full">
+      <canvas ref={ref} className="w-full h-full block" />
+      {overlayNodes.map(({ wallet, left, top, primary }) => (
+        <Link
+          key={wallet.addr}
+          to="/wallet/$address"
+          params={{ address: wallet.addr }}
+          aria-label={`Open wallet ${wallet.addr}`}
+          className={`absolute -translate-x-1/2 -translate-y-1/2 border bg-black/80 px-2 py-1 text-left font-mono text-[10px] shadow-[0_0_18px_rgba(232,255,71,0.08)] backdrop-blur transition-colors hover:border-yellow hover:text-yellow ${
+            primary ? "border-yellow text-yellow" : "border-cyan/50 text-cyan"
+          }`}
+          style={{ left: `${left}%`, top: `${top}%` }}
+        >
+          <span className="block max-w-[150px] truncate">
+            {wallet.addr.slice(0, 8)}...{wallet.addr.slice(-6)}
+          </span>
+          <span className="block text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
+            {wallet.role} · rep {wallet.rep}
+          </span>
+        </Link>
+      ))}
+      {wallets.length > 0 && (
+        <div className="absolute right-2 top-2 flex max-w-[220px] flex-col gap-1">
+          {wallets.slice(0, 5).map((w) => (
+            <Link
+              key={w.addr}
+              to="/wallet/$address"
+              params={{ address: w.addr }}
+              className="border border-border bg-black/70 px-2 py-1 font-mono text-[10px] text-cyan hover:border-yellow hover:text-yellow"
+            >
+              {w.addr}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }

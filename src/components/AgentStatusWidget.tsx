@@ -10,8 +10,8 @@ type Health = {
 };
 
 /**
- * Pings the hosted Byreal agent's /health endpoint every 15s.
- * Configure via VITE_AGENT_URL or /admin.
+ * Pings the hosted agent runtime's /health endpoint every 15s.
+ * Configure via VITE_AGENT_URL.
  */
 export function AgentStatusWidget() {
   const [state, setState] = useState<Health>({
@@ -35,12 +35,7 @@ export function AgentStatusWidget() {
     const ctl = new AbortController();
     const start = performance.now();
     const url = cfg.agentUrl.replace(/\/$/, "") + "/health";
-    fetch(url, {
-      signal: ctl.signal,
-      headers: cfg.agentToken
-        ? { authorization: `Bearer ${cfg.agentToken}` }
-        : undefined,
-    })
+    fetch(url, { signal: ctl.signal })
       .then(async (r) => {
         const latencyMs = Math.round(performance.now() - start);
         let payload: unknown = null;
@@ -85,16 +80,11 @@ export function AgentStatusWidget() {
       </div>
       <div className="grid grid-cols-3 gap-2 mt-2">
         <Mini label="LATENCY" value={state.latencyMs ? `${state.latencyMs}ms` : "—"} />
-        <Mini
-          label="LAST_SEEN"
-          value={state.lastSeen ? rel(state.lastSeen) : "—"}
-        />
+        <Mini label="LAST_SEEN" value={state.lastSeen ? rel(state.lastSeen) : "—"} />
         <Mini label="POLL" value="15s" />
       </div>
       {state.error && (
-        <div className="font-mono text-[10px] text-red mt-2 break-all">
-          {state.error}
-        </div>
+        <div className="font-mono text-[10px] text-red mt-2 break-all">{state.error}</div>
       )}
     </div>
   );

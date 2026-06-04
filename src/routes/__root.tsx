@@ -1,4 +1,11 @@
-import { Outlet, Link, createRootRoute, HeadContent, Scripts, useRouter } from "@tanstack/react-router";
+import {
+  Outlet,
+  Link,
+  createRootRoute,
+  HeadContent,
+  Scripts,
+  useRouter,
+} from "@tanstack/react-router";
 import { ParticleBG } from "../components/ParticleBG";
 import { Nav } from "../components/Nav";
 import { Ticker } from "../components/Ticker";
@@ -32,18 +39,46 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "MemeAutonom · Agentic Wallet OS" },
-      { name: "description", content: "Observatory for autonomous wallets on Mantle. Activate once. Walk away. The wallet IS the agent." },
-      { property: "og:title", content: "MemeAutonom · Agentic Wallet OS" },
-      { property: "og:description", content: "Observatory for autonomous wallets on Mantle. Activate once. Walk away. The wallet IS the agent." },
+      { title: "MemeAutonom · Agent Wallet Reputation On Mantle" },
+      {
+        name: "description",
+        content:
+          "Identity, skills, execution history, and reputation for autonomous agent wallets on Mantle.",
+      },
+      { property: "og:title", content: "MemeAutonom · Agent Wallet Reputation On Mantle" },
+      {
+        property: "og:description",
+        content:
+          "Identity, skills, execution history, and reputation for autonomous agent wallets on Mantle.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:title", content: "MemeAutonom · Agentic Wallet OS" },
-      { name: "twitter:description", content: "Observatory for autonomous wallets on Mantle. Activate once. Walk away. The wallet IS the agent." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/947e60de-5522-4f08-8879-e00a1c90adc4" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/947e60de-5522-4f08-8879-e00a1c90adc4" },
+      {
+        name: "twitter:description",
+        content:
+          "Identity, skills, execution history, and reputation for autonomous agent wallets on Mantle.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/947e60de-5522-4f08-8879-e00a1c90adc4",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/947e60de-5522-4f08-8879-e00a1c90adc4",
+      },
     ],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&family=Syne:wght@600;700;800&display=swap",
+      },
+      { rel: "stylesheet", href: appCss },
+    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,
@@ -71,7 +106,10 @@ function RootErrorComponent({ error, reset }: { error: Error; reset: () => void 
         )}
         <div className="mt-6 flex items-center justify-center gap-3">
           <button
-            onClick={() => { router.invalidate(); reset(); }}
+            onClick={() => {
+              router.invalidate();
+              reset();
+            }}
             className="font-mono text-[11px] uppercase tracking-[0.18em] px-4 py-2.5 bg-yellow text-black hover:bg-yellow/90 transition-colors"
           >
             Retry
@@ -116,10 +154,10 @@ function RootComponent() {
           <footer className="max-w-[1400px] mx-auto px-4 sm:px-6 py-8 sm:py-10 border-t border-border mt-12">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                MemeAutonom · Track 6 · Turing Test Hackathon 2026
+                MemeAutonom · Mantle agent wallet reputation network
               </div>
               <div className="font-serif-italic text-sm text-muted-foreground">
-                the wallet <span className="text-yellow not-italic font-mono">IS</span> the agent
+                identity · skills · execution history · reputation
               </div>
             </div>
           </footer>

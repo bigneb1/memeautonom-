@@ -5,10 +5,12 @@ import logoUrl from "@/assets/logo.png";
 
 const links = [
   { to: "/", label: "MY WALLET" },
+  { to: "/activate", label: "ACTIVATE" },
+  { to: "/bootstrap", label: "BOOTSTRAP" },
+  { to: "/demo", label: "DEMO" },
   { to: "/economy", label: "ECONOMY" },
   { to: "/skills", label: "SKILLS" },
   { to: "/leaderboard", label: "LEADERBOARD" },
-  { to: "/admin", label: "ADMIN" },
 ] as const;
 
 export function Nav() {

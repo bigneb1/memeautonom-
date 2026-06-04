@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { GraphQLClient, gql } from "graphql-request";
 import { getConfig } from "@/lib/config";
+import { useContractHealth } from "@/hooks/useContractHealth";
 
 type Probe = {
   name: string;
@@ -16,14 +17,7 @@ const PROBES: Probe[] = [
     query: `query Probe { wallets(first: 1, orderBy: reputation, orderDirection: desc) {
       address role reputation jobsCompleted volumeUsdc autonomyScore activatedAt
     } }`,
-    expectFields: [
-      "address",
-      "role",
-      "reputation",
-      "jobsCompleted",
-      "volumeUsdc",
-      "autonomyScore",
-    ],
+    expectFields: ["address", "role", "reputation", "jobsCompleted", "volumeUsdc", "autonomyScore"],
   },
   {
     name: "skills_per_wallet",
@@ -55,6 +49,7 @@ type Result = {
 export function DiagnosticsPanel() {
   const [results, setResults] = useState<Result[]>([]);
   const [running, setRunning] = useState(false);
+  const contractHealth = useContractHealth();
 
   const run = async () => {
     const cfg = getConfig();
@@ -65,7 +60,7 @@ export function DiagnosticsPanel() {
           ok: false,
           latencyMs: 0,
           missing: [],
-          error: "VITE_INDEXER_URL not set (configure at /admin)",
+          error: "VITE_INDEXER_URL not set in frontend environment",
         },
       ]);
       return;
@@ -76,13 +71,13 @@ export function DiagnosticsPanel() {
     for (const p of PROBES) {
       const t0 = performance.now();
       try {
-        const data = await client.request<Record<string, unknown[]>>(gql`${p.query}`);
+        const data = await client.request<Record<string, unknown[]>>(gql`
+          ${p.query}
+        `);
         const latencyMs = Math.round(performance.now() - t0);
         const arr = (data?.[p.rootField] as unknown[]) ?? [];
         const sample = (arr[0] as Record<string, unknown>) || {};
-        const missing = arr.length === 0
-          ? []
-          : p.expectFields.filter((f) => !(f in sample));
+        const missing = arr.length === 0 ? [] : p.expectFields.filter((f) => !(f in sample));
         out.push({
           name: p.name,
           ok: missing.length === 0,
@@ -134,38 +129,46 @@ export function DiagnosticsPanel() {
             >
               <div className="flex items-center justify-between">
                 <span className="text-foreground">{r.name}</span>
-                <span
-                  className={
-                    r.ok
-                      ? "text-green"
-                      : r.error
-                      ? "text-red"
-                      : "text-orange"
-                  }
-                >
-                  {r.ok ? "OK" : r.error ? "ERROR" : "SCHEMA_MISMATCH"} ·{" "}
-                  {r.latencyMs}ms
+                <span className={r.ok ? "text-green" : r.error ? "text-red" : "text-orange"}>
+                  {r.ok ? "OK" : r.error ? "ERROR" : "SCHEMA_MISMATCH"} · {r.latencyMs}ms
                 </span>
               </div>
               {typeof r.count === "number" && (
-                <div className="text-[10px] text-muted-foreground mt-0.5">
-                  rows: {r.count}
-                </div>
+                <div className="text-[10px] text-muted-foreground mt-0.5">rows: {r.count}</div>
               )}
               {r.missing.length > 0 && (
                 <div className="text-[10px] text-orange mt-0.5">
                   missing fields: {r.missing.join(", ")}
                 </div>
               )}
-              {r.error && (
-                <div className="text-[10px] text-red mt-0.5 break-all">
-                  {r.error}
-                </div>
-              )}
+              {r.error && <div className="text-[10px] text-red mt-0.5 break-all">{r.error}</div>}
             </li>
           ))}
         </ul>
       )}
+      <div className="mt-4 border-t border-border pt-3">
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+            contract health
+          </div>
+          <span className={contractHealth.ready ? "text-green" : "text-orange"}>
+            {contractHealth.passed}/{contractHealth.total}
+          </span>
+        </div>
+        <div className="grid gap-1.5">
+          {contractHealth.wiringChecks.slice(0, 5).map((check) => (
+            <div
+              key={check.label}
+              className="flex items-center justify-between gap-3 font-mono text-[10px]"
+            >
+              <span className="text-muted-foreground">{check.label}</span>
+              <span className={check.ok ? "text-green" : "text-orange"}>
+                {check.ok ? "OK" : "CHECK"}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
