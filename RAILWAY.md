@@ -105,7 +105,6 @@ VITE_INDEXER_URL=https://<indexer-service>.up.railway.app/v1/graphql
 VITE_AGENT_URL=https://<agent-service>.up.railway.app
 VITE_MANTLE_CHAIN_ID=5000
 VITE_MANTLE_RPC=https://rpc.mantle.xyz
-VITE_MANTLE_SEPOLIA_RPC=https://rpc.sepolia.mantle.xyz
 VITE_IDENTITY_ADDRESS=0xe8910a5205695efab09a030b004770303ab4b2b1
 VITE_REPUTATION_ADDRESS=0xf2b6d37a4eecc8cef39225e84bfb81c31bac525e
 VITE_VALIDATION_ADDRESS=0x3dc4de8a358ef667107f45626589d0d02a3d84e3

@@ -12,7 +12,7 @@ pragma solidity ^0.8.24;
  *           - IdentityRegistered(address wallet, uint256 id, address controller, string uri)
  *           - IdentityUpdated(address wallet, string uri)
  *
- * @dev Designed for Mantle Sepolia (chainId 5003) but chain-agnostic.
+ * @dev Deployed for Mantle mainnet production beta but chain-agnostic.
  */
 contract ERC8004Identity {
     struct Identity {

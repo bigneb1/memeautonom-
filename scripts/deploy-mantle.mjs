@@ -45,7 +45,7 @@ function bytecodePath(contract) {
 }
 
 async function main() {
-  const network = process.env.MANTLE_NETWORK || "sepolia";
+  const network = process.env.MANTLE_NETWORK || "mainnet";
   const chain = CHAIN_BY_NAME[network];
   if (!chain) throw new Error(`Unsupported MANTLE_NETWORK: ${network}`);
   if (
@@ -124,7 +124,6 @@ async function main() {
     `FEE_SINK=${feeSink}`,
     `VITE_MANTLE_CHAIN_ID=${chain.id}`,
     `VITE_MANTLE_RPC=${chain.id === mantle.id ? rpcUrl : "https://rpc.mantle.xyz"}`,
-    `VITE_MANTLE_SEPOLIA_RPC=${chain.id === mantleSepoliaTestnet.id ? rpcUrl : "https://rpc.sepolia.mantle.xyz"}`,
     `VITE_IDENTITY_ADDRESS=${deployed.identity}`,
     `VITE_REPUTATION_ADDRESS=${deployed.reputation}`,
     `VITE_VALIDATION_ADDRESS=${deployed.validation}`,
@@ -133,6 +132,9 @@ async function main() {
     `VITE_WALLET_FACTORY_ADDRESS=${deployed.factory}`,
     `VITE_USDC_ADDRESS=${usdc}`,
   ];
+  if (chain.id === mantleSepoliaTestnet.id) {
+    lines.splice(14, 0, `VITE_MANTLE_SEPOLIA_RPC=${rpcUrl}`);
+  }
   writeFileSync(resolve(process.cwd(), "deployments.env"), `${lines.join("\n")}\n`);
   console.log(JSON.stringify(deployed, null, 2));
 

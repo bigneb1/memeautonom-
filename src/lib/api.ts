@@ -175,12 +175,12 @@ export type AgentDecision = {
   error?: string;
 };
 
-export function mantleExplorerAddress(address: string, chainId = 5003) {
+export function mantleExplorerAddress(address: string, chainId = 5000) {
   const base = chainId === 5000 ? "https://mantlescan.xyz" : "https://sepolia.mantlescan.xyz";
   return `${base}/address/${address}`;
 }
 
-export function mantleExplorerTx(txHash: string, chainId = 5003) {
+export function mantleExplorerTx(txHash: string, chainId = 5000) {
   const base = chainId === 5000 ? "https://mantlescan.xyz" : "https://sepolia.mantlescan.xyz";
   return `${base}/tx/${txHash}`;
 }

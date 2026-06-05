@@ -11,9 +11,9 @@ Solidity sources for the six core contracts referenced by `INTEGRATION.md`:
 | `SkillRegistry`                            | `src/SkillRegistry.sol`        | Publish / install / fire decision-module skills       |
 | `AgenticWalletFactory` (+ `AgenticWallet`) | `src/AgenticWalletFactory.sol` | CREATE2 factory for agent-controlled smart accounts   |
 
-Default target network: **Mantle Sepolia** (chainId `5003`, RPC `https://rpc.sepolia.mantle.xyz`).
-Mantle mainnet is supported only when `MANTLE_NETWORK=mainnet`,
-`ALLOW_MAINNET=1`, and `MANTLE_RPC` are set explicitly.
+Default target network: **Mantle mainnet** (chainId `5000`, RPC `https://rpc.mantle.xyz`).
+Mainnet writes are guarded by `ALLOW_MAINNET=1`. Mantle Sepolia remains
+available only for explicit local testing with `MANTLE_NETWORK=sepolia`.
 
 ---
 
@@ -30,28 +30,25 @@ forge test
 
 You also need:
 
-- a deployer EOA funded with **Mantle Sepolia ETH** (faucet: https://faucet.sepolia.mantle.xyz)
-- the **USDC test token address** on Mantle Sepolia (ask in Mantle discord, or deploy a `MockUSDC` ERC20 if none is canonical at deploy time)
+- a deployer EOA funded with **Mantle mainnet MNT**
+- the **USDC token address** on Mantle mainnet: `0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9`
 
 Set env:
-
-```bash
-export MANTLE_SEPOLIA_RPC=https://rpc.sepolia.mantle.xyz
-export PRIVATE_KEY=0x...            # deployer
-export USDC=0x...                   # Mantle Sepolia USDC
-export FEE_SINK=0xYourTreasury      # receives JobRegistry fees
-```
-
-For Mantle mainnet, use a fresh funded key stored only in your local shell or a
-secret manager:
 
 ```bash
 export MANTLE_NETWORK=mainnet
 export ALLOW_MAINNET=1
 export MANTLE_RPC=https://rpc.mantle.xyz
-export PRIVATE_KEY=0x...
-export USDC=0x...
-export FEE_SINK=0xYourTreasury
+export PRIVATE_KEY=0x...            # deployer
+export USDC=0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9
+export FEE_SINK=0xYourTreasury      # receives JobRegistry fees
+```
+
+For optional Sepolia testing, override the network and RPC explicitly:
+
+```bash
+export MANTLE_NETWORK=sepolia
+export MANTLE_SEPOLIA_RPC=https://rpc.sepolia.mantle.xyz
 ```
 
 ---
@@ -76,46 +73,46 @@ Deploy order: **Identity → Reputation → Validation → SkillRegistry → Job
 ```bash
 # 1) Identity
 forge create src/ERC8004Identity.sol:ERC8004Identity \
-  --rpc-url $MANTLE_SEPOLIA_RPC --private-key $PRIVATE_KEY --broadcast
+  --rpc-url $MANTLE_RPC --private-key $PRIVATE_KEY --broadcast
 
 # 2) Reputation + validation registries
 forge create src/ERC8004Reputation.sol:ERC8004Reputation \
-  --rpc-url $MANTLE_SEPOLIA_RPC --private-key $PRIVATE_KEY --broadcast \
+  --rpc-url $MANTLE_RPC --private-key $PRIVATE_KEY --broadcast \
   --constructor-args <IDENTITY_ADDR>
 
 forge create src/ERC8004Validation.sol:ERC8004Validation \
-  --rpc-url $MANTLE_SEPOLIA_RPC --private-key $PRIVATE_KEY --broadcast \
+  --rpc-url $MANTLE_RPC --private-key $PRIVATE_KEY --broadcast \
   --constructor-args <IDENTITY_ADDR>
 
 # 3) SkillRegistry
 forge create src/SkillRegistry.sol:SkillRegistry \
-  --rpc-url $MANTLE_SEPOLIA_RPC --private-key $PRIVATE_KEY --broadcast
+  --rpc-url $MANTLE_RPC --private-key $PRIVATE_KEY --broadcast
 
 # 4) JobRegistry
 forge create src/JobRegistry.sol:JobRegistry \
-  --rpc-url $MANTLE_SEPOLIA_RPC --private-key $PRIVATE_KEY --broadcast \
+  --rpc-url $MANTLE_RPC --private-key $PRIVATE_KEY --broadcast \
   --constructor-args $USDC <IDENTITY_ADDR> $FEE_SINK 250
 
 # 5) Factory
 forge create src/AgenticWalletFactory.sol:AgenticWalletFactory \
-  --rpc-url $MANTLE_SEPOLIA_RPC --private-key $PRIVATE_KEY --broadcast \
+  --rpc-url $MANTLE_RPC --private-key $PRIVATE_KEY --broadcast \
   --constructor-args <IDENTITY_ADDR>
 
 # 6) Grant registry permissions
 cast send <IDENTITY_ADDR> "setRegistrar(address,bool)" <FACTORY_ADDR> true \
-  --rpc-url $MANTLE_SEPOLIA_RPC --private-key $PRIVATE_KEY
+  --rpc-url $MANTLE_RPC --private-key $PRIVATE_KEY
 
 cast send <REPUTATION_ADDR> "setReporter(address,bool)" <SKILL_REGISTRY_ADDR> true \
-  --rpc-url $MANTLE_SEPOLIA_RPC --private-key $PRIVATE_KEY
+  --rpc-url $MANTLE_RPC --private-key $PRIVATE_KEY
 
 cast send <REPUTATION_ADDR> "setReporter(address,bool)" <JOB_REGISTRY_ADDR> true \
-  --rpc-url $MANTLE_SEPOLIA_RPC --private-key $PRIVATE_KEY
+  --rpc-url $MANTLE_RPC --private-key $PRIVATE_KEY
 
 cast send <SKILL_REGISTRY_ADDR> "setReputationRegistry(address)" <REPUTATION_ADDR> \
-  --rpc-url $MANTLE_SEPOLIA_RPC --private-key $PRIVATE_KEY
+  --rpc-url $MANTLE_RPC --private-key $PRIVATE_KEY
 
 cast send <JOB_REGISTRY_ADDR> "setReputationRegistry(address)" <REPUTATION_ADDR> \
-  --rpc-url $MANTLE_SEPOLIA_RPC --private-key $PRIVATE_KEY
+  --rpc-url $MANTLE_RPC --private-key $PRIVATE_KEY
 ```
 
 ### One-command deploy path
@@ -129,9 +126,8 @@ npm run deploy:mantle
 ```
 
 Required environment variables are the same as above:
-`PRIVATE_KEY`, `USDC`, `FEE_SINK`, and either `MANTLE_SEPOLIA_RPC` for Sepolia
-or `MANTLE_RPC` for mainnet. Optional variables: `FEE_BPS`, `START_BLOCK`,
-`MANTLE_NETWORK`, `ALLOW_MAINNET`.
+`PRIVATE_KEY`, `USDC`, `FEE_SINK`, `MANTLE_RPC`, `MANTLE_NETWORK=mainnet`, and
+`ALLOW_MAINNET=1`. Optional variables: `FEE_BPS` and `START_BLOCK`.
 
 For wallet policy bootstrap after deployment:
 
@@ -165,30 +161,30 @@ Common selectors:
 | `approve(address,uint256)`              | `0x095ea7b3` |
 | `transferFrom(address,address,uint256)` | `0x23b872dd` |
 
-Example bootstrap for a low-risk Sepolia demo wallet:
+Example bootstrap for a low-risk mainnet production wallet:
 
 ```bash
 # Allow SkillRegistry.fire(bytes32,bytes32)
 cast send <AGENT_WALLET> "setTargetAllowed(address,bool)" <SKILL_REGISTRY_ADDR> true \
-  --rpc-url $MANTLE_SEPOLIA_RPC --private-key $OWNER_PRIVATE_KEY
+  --rpc-url $MANTLE_RPC --private-key $OWNER_PRIVATE_KEY
 
 cast send <AGENT_WALLET> "setSelectorAllowed(address,bytes4,bool)" <SKILL_REGISTRY_ADDR> 0xa9363859 true \
-  --rpc-url $MANTLE_SEPOLIA_RPC --private-key $OWNER_PRIVATE_KEY
+  --rpc-url $MANTLE_RPC --private-key $OWNER_PRIVATE_KEY
 
 # Enable a skill-specific policy with zero token/native spend for proof-of-execution calls.
 cast send <AGENT_WALLET> "setSkillLimits(bytes32,uint128,uint128,bool)" <SKILL_ID> 0 0 true \
-  --rpc-url $MANTLE_SEPOLIA_RPC --private-key $OWNER_PRIVATE_KEY
+  --rpc-url $MANTLE_RPC --private-key $OWNER_PRIVATE_KEY
 ```
 
 For skills that move funds, call `setSkillLimits(bytes32,uint128,uint128,bool)`
 and use `executeSkill(bytes32,address,uint256,bytes)` from the runtime signer.
-Keep Sepolia limits low and document the exact approved targets/selectors.
+Keep mainnet limits low and document the exact approved targets/selectors.
 
 Verify on Mantlescan:
 
 ```bash
 forge verify-contract <ADDR> src/JobRegistry.sol:JobRegistry \
-  --chain 5003 --etherscan-api-key $MANTLESCAN_API_KEY \
+  --chain 5000 --etherscan-api-key $MANTLESCAN_API_KEY \
   --constructor-args $(cast abi-encode "constructor(address,address,address,uint16)" $USDC <IDENTITY> $FEE_SINK 250)
 ```
 
@@ -201,7 +197,6 @@ After deploy, set the addresses as build-time env vars for the frontend:
 ```env
 VITE_MANTLE_CHAIN_ID=5000
 VITE_MANTLE_RPC=https://rpc.mantle.xyz
-VITE_MANTLE_SEPOLIA_RPC=https://rpc.sepolia.mantle.xyz
 VITE_IDENTITY_ADDRESS=0x...
 VITE_REPUTATION_ADDRESS=0x...
 VITE_VALIDATION_ADDRESS=0x...
@@ -234,11 +229,11 @@ npm run deploy:env -- ./deployments.env
 ```bash
 # Register an identity
 cast send <IDENTITY> "register(string)" "ipfs://Qm.../agent.json" \
-  --rpc-url $MANTLE_SEPOLIA_RPC --private-key $PRIVATE_KEY
+  --rpc-url $MANTLE_RPC --private-key $PRIVATE_KEY
 
 # Publish a skill
 cast send <SKILL_REGISTRY> "publish(string,string)" "TrendScout" "ipfs://Qm.../skill.json" \
-  --rpc-url $MANTLE_SEPOLIA_RPC --private-key $PRIVATE_KEY
+  --rpc-url $MANTLE_RPC --private-key $PRIVATE_KEY
 
 # Predict a wallet address before deploy
 cast call <FACTORY> "predict(address,address,uint256)(address)" $OWNER $SIGNER 1

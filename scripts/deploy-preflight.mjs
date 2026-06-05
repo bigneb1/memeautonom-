@@ -9,7 +9,7 @@ function parseBool(value, fallback) {
 }
 
 function selectedChain() {
-  const network = process.env.MANTLE_NETWORK || "sepolia";
+  const network = process.env.MANTLE_NETWORK || "mainnet";
   return network === "mainnet" || network === "mantle" ? mantle : mantleSepoliaTestnet;
 }
 

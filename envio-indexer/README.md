@@ -16,9 +16,10 @@ npm run codegen
 npm run dev          # spins up Postgres + GraphQL @ http://localhost:8080/v1/graphql
 ```
 
-For Mantle Sepolia, use `MANTLE_CHAIN_ID=5003` and
-`MANTLE_RPC_URL=https://rpc.sepolia.mantle.xyz`. For Mantle mainnet, use
-`MANTLE_CHAIN_ID=5000` and `MANTLE_RPC_URL=https://rpc.mantle.xyz`.
+For production, use Mantle mainnet with `MANTLE_CHAIN_ID=5000` and
+`MANTLE_RPC_URL=https://rpc.mantle.xyz`. Mantle Sepolia is only for explicit
+local testing with `MANTLE_CHAIN_ID=5003` and
+`MANTLE_RPC_URL=https://rpc.sepolia.mantle.xyz`.
 
 Open http://localhost:8080 and run a probe:
 

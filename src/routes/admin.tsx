@@ -85,24 +85,24 @@ function Admin() {
         />
         <Field
           label="VITE_MANTLE_CHAIN_ID"
-          hint="5003 for Sepolia demo, 5000 for Mantle mainnet"
+          hint="5000 for Mantle mainnet; 5003 only for optional Sepolia testing"
           value={String(cfg.mantleChainId)}
-          onChange={(v) => update({ mantleChainId: Number(v) || 5003 })}
-          placeholder="5003"
-        />
-        <Field
-          label="VITE_MANTLE_SEPOLIA_RPC"
-          hint="Override Mantle Sepolia RPC URL"
-          value={cfg.mantleSepoliaRpc}
-          onChange={(v) => update({ mantleSepoliaRpc: v })}
-          placeholder="https://rpc.sepolia.mantle.xyz"
+          onChange={(v) => update({ mantleChainId: Number(v) || 5000 })}
+          placeholder="5000"
         />
         <Field
           label="VITE_MANTLE_RPC"
-          hint="Override Mantle mainnet RPC URL"
+          hint="Mantle mainnet RPC URL"
           value={cfg.mantleRpc}
           onChange={(v) => update({ mantleRpc: v })}
           placeholder="https://rpc.mantle.xyz"
+        />
+        <Field
+          label="VITE_MANTLE_SEPOLIA_RPC"
+          hint="Optional Mantle Sepolia RPC URL for explicit testing only"
+          value={cfg.mantleSepoliaRpc}
+          onChange={(v) => update({ mantleSepoliaRpc: v })}
+          placeholder="https://rpc.sepolia.mantle.xyz"
         />
       </section>
 

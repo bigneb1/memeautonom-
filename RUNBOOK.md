@@ -51,16 +51,15 @@ Create `.env.local` at the repo root for local frontend configuration:
 VITE_WALLETCONNECT_PROJECT_ID=
 VITE_INDEXER_URL=
 VITE_AGENT_URL=
-VITE_MANTLE_CHAIN_ID=5003
+VITE_MANTLE_CHAIN_ID=5000
 VITE_MANTLE_RPC=https://rpc.mantle.xyz
-VITE_MANTLE_SEPOLIA_RPC=https://rpc.sepolia.mantle.xyz
-VITE_IDENTITY_ADDRESS=
-VITE_REPUTATION_ADDRESS=
-VITE_VALIDATION_ADDRESS=
-VITE_JOB_REGISTRY_ADDRESS=
-VITE_SKILL_REGISTRY_ADDRESS=
-VITE_WALLET_FACTORY_ADDRESS=
-VITE_USDC_ADDRESS=
+VITE_IDENTITY_ADDRESS=0xe8910a5205695efab09a030b004770303ab4b2b1
+VITE_REPUTATION_ADDRESS=0xf2b6d37a4eecc8cef39225e84bfb81c31bac525e
+VITE_VALIDATION_ADDRESS=0x3dc4de8a358ef667107f45626589d0d02a3d84e3
+VITE_JOB_REGISTRY_ADDRESS=0x7f6349a6401f9d5584c34f87d8c4ee01285453da
+VITE_SKILL_REGISTRY_ADDRESS=0x27997b8ed551d1f88683c2b02f50a90261fc3b0b
+VITE_WALLET_FACTORY_ADDRESS=0x10c691d2eaaf625c32b9fe608f5a3c0a2be7e3f7
+VITE_USDC_ADDRESS=0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9
 ```
 
 Do not put private keys or seed phrases in any `VITE_*` value. Vite exposes
@@ -82,9 +81,9 @@ forge init --no-git --force .
 forge build
 ```
 
-Deployment guidance is in `contracts/DEPLOY.md`. Use Mantle Sepolia for policy
-and runtime rehearsals, and Mantle mainnet only when `ALLOW_MAINNET=1` is set
-from a fresh funded deployer key.
+Deployment guidance is in `contracts/DEPLOY.md`. The product deployment target
+is Mantle mainnet. Mainnet writes require `ALLOW_MAINNET=1` and a fresh funded
+deployer key.
 
 Mantle mainnet deployment is guarded. Use a fresh funded key in a local env var
 or secrets manager, then set:
@@ -128,7 +127,9 @@ for one explicit `SKILL_ID`. The wallet does not expose a generic `execute`
 method; runtime actions must use `executeSkill`.
 
 ```bash
-export MANTLE_SEPOLIA_RPC=https://rpc.sepolia.mantle.xyz
+export MANTLE_NETWORK=mainnet
+export ALLOW_MAINNET=1
+export MANTLE_RPC=https://rpc.mantle.xyz
 export AGENT_PRIVATE_KEY=0x...
 export WALLET_ADDRESS=0x...
 export SKILL_REGISTRY_ADDRESS=0x...

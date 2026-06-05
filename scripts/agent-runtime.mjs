@@ -61,7 +61,7 @@ function requireBytes32(value, name) {
 }
 
 function chain() {
-  const network = process.env.MANTLE_NETWORK || "sepolia";
+  const network = process.env.MANTLE_NETWORK || "mainnet";
   return network === "mainnet" || network === "mantle" ? mantle : mantleSepoliaTestnet;
 }
 
@@ -223,7 +223,7 @@ const server = createServer(async (req, res) => {
         byrealEnabled: parseBool(process.env.BYREAL_ENABLED, false),
         byrealRequired: parseBool(process.env.BYREAL_REQUIRED, false),
         byrealArgs: process.env.BYREAL_ARGS || DEFAULT_BYREAL_ARGS,
-        network: process.env.MANTLE_NETWORK || "sepolia",
+        network: process.env.MANTLE_NETWORK || "mainnet",
         wallet: process.env.WALLET_ADDRESS || "",
         skillRegistry: process.env.SKILL_REGISTRY_ADDRESS || "",
         skillId: process.env.SKILL_ID || "",

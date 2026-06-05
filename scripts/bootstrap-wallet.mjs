@@ -57,7 +57,7 @@ async function main() {
     process.env.SKILL_DAILY_LIMIT || process.env.DEFAULT_DAILY_LIMIT || "0",
   );
   const skillEnabled = parseBool(process.env.SKILL_ENABLED, true);
-  const network = process.env.MANTLE_NETWORK || "sepolia";
+  const network = process.env.MANTLE_NETWORK || "mainnet";
   const chain = network === "mainnet" || network === "mantle" ? mantle : mantleSepoliaTestnet;
   if (chain.id === mantle.id && !parseBool(process.env.ALLOW_MAINNET, false)) {
     throw new Error("Set ALLOW_MAINNET=1 before bootstrapping a wallet on Mantle mainnet.");

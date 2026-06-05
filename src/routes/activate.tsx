@@ -37,9 +37,9 @@ function ActivateAgentWallet() {
     }
   }, [salt]);
   const validSigner = isAddress(signer);
-  const demoReady = chainId === mantleSepoliaTestnet.id;
+  const sepoliaSelected = chainId === mantleSepoliaTestnet.id;
   const mainnetSelected = chainId === mantle.id;
-  const supportedChain = demoReady || mainnetSelected;
+  const supportedChain = sepoliaSelected || mainnetSelected;
 
   const { data: predicted } = useReadContract({
     address: factory,
@@ -65,11 +65,11 @@ function ActivateAgentWallet() {
       <section>
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <Tag color="cyan">AGENT WALLET</Tag>
-          <Tag color={demoReady ? "green" : mainnetSelected ? "red" : "yellow"}>
-            {demoReady
-              ? "MANTLE SEPOLIA DEMO"
-              : mainnetSelected
-                ? "MAINNET SELECTED"
+          <Tag color={mainnetSelected ? "green" : sepoliaSelected ? "yellow" : "red"}>
+            {mainnetSelected
+              ? "MANTLE MAINNET"
+              : sepoliaSelected
+                ? "SEPOLIA TEST MODE"
                 : "SWITCH TO MANTLE"}
           </Tag>
         </div>
@@ -78,9 +78,9 @@ function ActivateAgentWallet() {
           <span className="font-serif-italic text-yellow font-normal">policy wallet</span>.
         </h1>
         <p className="mt-3 max-w-2xl font-mono text-xs leading-relaxed text-muted-foreground">
-          This calls AgenticWalletFactory.deploy(owner, signer, salt, uri). Keep Sepolia as the
-          proof target until the full loop is green; use mainnet only after the same policy and
-          indexer checks pass.
+          This calls AgenticWalletFactory.deploy(owner, signer, salt, uri) against the configured
+          Mantle production contracts. Use Sepolia only for explicit local testing; the deployed
+          hackathon app is mainnet-first.
         </p>
       </section>
 
@@ -116,7 +116,7 @@ function ActivateAgentWallet() {
           )}
           {!supportedChain && (
             <p className="font-mono text-[11px] text-red">
-              Deployment is disabled unless your wallet is on Mantle Sepolia or Mantle mainnet.
+              Deployment is disabled unless your wallet is on Mantle mainnet or Mantle Sepolia.
               Mainnet scripts still require ALLOW_MAINNET=1 and local env keys.
             </p>
           )}

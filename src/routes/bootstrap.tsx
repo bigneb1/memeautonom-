@@ -33,9 +33,9 @@ function BootstrapSkillPolicy() {
   const skillRegistry = contractAddress("skillRegistry");
   const validWallet = isAddress(wallet);
   const validSkill = /^0x[a-fA-F0-9]{64}$/.test(skillId);
-  const demoReady = chainId === mantleSepoliaTestnet.id;
+  const sepoliaSelected = chainId === mantleSepoliaTestnet.id;
   const mainnetSelected = chainId === mantle.id;
-  const supportedChain = demoReady || mainnetSelected;
+  const supportedChain = sepoliaSelected || mainnetSelected;
 
   const send = async (label: string, fn: () => Promise<`0x${string}`>) => {
     const hash = await fn();
@@ -112,8 +112,12 @@ function BootstrapSkillPolicy() {
       <section>
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <Tag color="cyan">SKILL POLICY</Tag>
-          <Tag color={demoReady ? "green" : mainnetSelected ? "red" : "yellow"}>
-            {demoReady ? "MANTLE SEPOLIA" : mainnetSelected ? "MANTLE MAINNET" : "SWITCH TO MANTLE"}
+          <Tag color={mainnetSelected ? "green" : sepoliaSelected ? "yellow" : "red"}>
+            {mainnetSelected
+              ? "MANTLE MAINNET"
+              : sepoliaSelected
+                ? "SEPOLIA TEST MODE"
+                : "SWITCH TO MANTLE"}
           </Tag>
         </div>
         <h1 className="font-display text-4xl leading-none text-foreground md:text-5xl">
@@ -159,7 +163,7 @@ function BootstrapSkillPolicy() {
           )}
           {!supportedChain && (
             <div className="font-mono text-[11px] text-red">
-              Switch to Mantle Sepolia or Mantle mainnet for policy bootstrap.
+              Switch to Mantle mainnet or Mantle Sepolia for policy bootstrap.
             </div>
           )}
         </div>
